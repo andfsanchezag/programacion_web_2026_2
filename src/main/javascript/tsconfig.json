@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "target": "es2022",
+    "module": "es2020",
+    "lib": ["es2022", "dom"],
+    "strict": true,
+    "noEmit": true,
+    "experimentalDecorators": true,
+    "types": []
+  },
+  "include": ["application/domain/**/*.ts"],
+  "exclude": ["node_modules/**/*"]
+}
