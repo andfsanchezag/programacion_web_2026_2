@@ -7,7 +7,7 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'html', 'json-summary'],
       reportsDirectory: './coverage',
-      include: ['application/domain/**'],
+      include: ['application/**/*.ts'],
       exclude: ['application/domain/index.ts', 'application/domain/ports/**'],
     },
   },

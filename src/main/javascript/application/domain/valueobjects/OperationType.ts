@@ -29,6 +29,7 @@ export class OperationType extends DomainCatalog {
   static readonly LOAN_PAYMENT = OperationType.create('LOAN_PAYMENT', 'Loan Payment', 'Loan payment operation');
   static readonly LOAN_OVERDUE = OperationType.create('LOAN_OVERDUE', 'Loan Overdue', 'Loan overdue operation');
   static readonly LOAN_CANCELLATION = OperationType.create('LOAN_CANCELLATION', 'Loan Cancellation', 'Loan cancellation operation');
+  static readonly LOAN_CLOSURE = OperationType.create('LOAN_CLOSURE', 'Loan Closure', 'Loan closure completes the loan lifecycle to CLOSED');
 
   private constructor(code: string, name: string, description: string) {
     super(code, name, description);

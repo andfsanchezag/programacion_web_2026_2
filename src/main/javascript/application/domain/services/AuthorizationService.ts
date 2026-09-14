@@ -45,7 +45,12 @@ export class AuthorizationService {
     if (!this.hasPermission(actor)) {
       return false;
     }
-    if (product instanceof Loan || product instanceof Transfer) {
+    if (product instanceof Loan) {
+      // Operador/empresario, dueño, o analista interno (rol autorizado del
+      // ciclo de vida del préstamo: desembolso/cierre según Input-ports).
+      return this.isAuthorizeOperatorOrOwner(actor, product) || actor.role.canApproveLoans();
+    }
+    if (product instanceof Transfer) {
       return this.isAuthorizeOperatorOrOwner(actor, product);
     }
     return this.isEmployee(actor) || this.isActorOwner(actor, product);

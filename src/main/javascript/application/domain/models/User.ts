@@ -12,7 +12,7 @@ export class User extends Person {
   private readonly _username: string;
   private _passwordHash: string;
   private _status: UserStatus;
-  private readonly _customer: Customer | null;
+  private _customer: Customer | null;
 
   constructor(
     userId: string,
@@ -81,6 +81,10 @@ export class User extends Person {
 
   get customer(): Customer | null {
     return this._customer;
+  }
+
+  set customer(customer: Customer | null) {
+    this._customer = customer;
   }
 
   replacePassword(passwordHash: string): void {

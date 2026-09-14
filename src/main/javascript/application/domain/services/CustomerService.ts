@@ -10,14 +10,6 @@ import { BankAccountRepositoryPort } from '../ports/out/BankAccountRepositoryPor
 import { LoanRepositoryPort } from '../ports/out/LoanRepositoryPort';
 import { AuthorizationPort } from '../ports/out/AuthorizationPort';
 import {
-  RegisterNaturalCustomerUseCase,
-} from '../ports/in/RegisterNaturalCustomerUseCase';
-import { RegisterBusinessCustomerUseCase } from '../ports/in/RegisterBusinessCustomerUseCase';
-import { ConsultCustomerUseCase } from '../ports/in/ConsultCustomerUseCase';
-import { UpdateCustomerUseCase } from '../ports/in/UpdateCustomerUseCase';
-import { ChangeCustomerStatusUseCase } from '../ports/in/ChangeCustomerStatusUseCase';
-import { ConsultCustomerProductsUseCase } from '../ports/in/ConsultCustomerProductsUseCase';
-import {
   CustomerAlreadyExistsException,
   CustomerNotFoundException,
   InvalidCustomerException,
@@ -30,14 +22,9 @@ import {
  * subdomain while preserving domain integrity.
  *
  * Depends only on Output Ports and never on infrastructure.
+ * Async: persistence goes to MySQL through CustomerRepositoryPort.
  */
-export class CustomerService implements
-  RegisterNaturalCustomerUseCase,
-  RegisterBusinessCustomerUseCase,
-  ConsultCustomerUseCase,
-  UpdateCustomerUseCase,
-  ChangeCustomerStatusUseCase,
-  ConsultCustomerProductsUseCase {
+export class CustomerService {
 
   constructor(
     private readonly customerRepository: CustomerRepositoryPort,
@@ -46,69 +33,69 @@ export class CustomerService implements
     private readonly authorizationPort: AuthorizationPort
   ) {}
 
-  registerNaturalCustomer(customer: NaturalCustomer): NaturalCustomer {
+  async registerNaturalCustomer(customer: NaturalCustomer): Promise<NaturalCustomer> {
     customer.validateRegistration();
-    this.ensureDoesNotExist(customer);
-    const saved = this.customerRepository.save(customer);
+    await this.ensureDoesNotExist(customer);
+    const saved = await this.customerRepository.save(customer);
     return saved as NaturalCustomer;
   }
 
-  registerBusinessCustomer(customer: BusinessCustomer): BusinessCustomer {
+  async registerBusinessCustomer(customer: BusinessCustomer): Promise<BusinessCustomer> {
     customer.validateRegistration();
-    this.ensureDoesNotExist(customer);
-    const saved = this.customerRepository.save(customer);
+    await this.ensureDoesNotExist(customer);
+    const saved = await this.customerRepository.save(customer);
     return saved as BusinessCustomer;
   }
 
-  consult(requestingUser: User, customer: Customer): Customer {
+  async consult(requestingUser: User, customer: Customer): Promise<Customer> {
     this.assertCanAccessCustomer(requestingUser, customer);
-    const found = this.customerRepository.findByIdentification(customer);
+    const found = await this.customerRepository.findByIdentification(customer);
     if (found === null || found === undefined) {
       throw new CustomerNotFoundException('Customer not found');
     }
     return found;
   }
 
-  update(requestingUser: User, customer: Customer): Customer {
+  async update(requestingUser: User, customer: Customer): Promise<Customer> {
     this.assertCanAccessCustomer(requestingUser, customer);
-    this.assertExists(customer);
-    this.customerRepository.update(customer);
+    await this.assertExists(customer);
+    await this.customerRepository.update(customer);
     return customer;
   }
 
-  changeStatus(requestingUser: User, customer: Customer): Customer {
+  async changeStatus(requestingUser: User, customer: Customer): Promise<Customer> {
     this.assertCanAccessCustomer(requestingUser, customer);
-    this.assertExists(customer);
+    await this.assertExists(customer);
     if (!customer.status.isValid()) {
       throw new InvalidCustomerStatusException('Invalid customer status');
     }
-    this.customerRepository.update(customer);
+    await this.customerRepository.update(customer);
     return customer;
   }
 
-  consultProducts(requestingUser: User, customer: Customer): BankingProduct[] {
+  async consultProducts(requestingUser: User, customer: Customer): Promise<BankingProduct[]> {
     this.assertCanAccessCustomer(requestingUser, customer);
-    this.assertExists(customer);
-    const accounts = this.bankAccountRepository.findAllByOwner(customer);
-    const loans = this.loanRepository.findAllByApplicant(customer);
+    await this.assertExists(customer);
+    const accounts = await this.bankAccountRepository.findAllByOwner(customer);
+    const loans = await this.loanRepository.findAllByApplicant(customer);
     return [...accounts, ...loans];
   }
 
-  private ensureDoesNotExist(customer: Customer): void {
-    if (this.customerRepository.existsByIdentification(customer)) {
+  private async ensureDoesNotExist(customer: Customer): Promise<void> {
+    if (await this.customerRepository.existsByIdentification(customer)) {
       throw new CustomerAlreadyExistsException(
         'A customer with this identification already exists'
       );
     }
-    if (this.customerRepository.existsByEmail(customer)) {
+    if (await this.customerRepository.existsByEmail(customer)) {
       throw new CustomerAlreadyExistsException(
         'A customer with this email already exists'
       );
     }
   }
 
-  private assertExists(customer: Customer): void {
-    if (!this.customerRepository.existsByIdentification(customer)) {
+  private async assertExists(customer: Customer): Promise<void> {
+    if (!(await this.customerRepository.existsByIdentification(customer))) {
       throw new CustomerNotFoundException('Customer not found');
     }
   }

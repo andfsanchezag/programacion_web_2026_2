@@ -39,18 +39,18 @@ function build() {
 }
 
 describe('TransferService', () => {
-  it('creates a transfer below the approval threshold', () => {
+  it('creates a transfer below the approval threshold', async () => {
     const { service, transfers } = build();
     const transfer = new Transfer(
       'tr-small', buildTransferModel().sourceAccount, buildTransferModel().destinationAccount,
       100, NOW, makeUser(SystemRole.NATURAL_CUSTOMER), TransferStatus.PENDING
     );
-    const saved = service.createTransfer(makeUser(), transfer);
+    const saved = await service.createTransfer(makeUser(), transfer);
     expect(saved.transferStatus.code).toBe(TransferStatus.PENDING.code);
     expect(transfers.save).toHaveBeenCalled();
   });
 
-  it('submits high-value transfers for approval on creation', () => {
+  it('submits high-value transfers for approval on creation', async () => {
     const { service } = build();
     const owner = makeCustomer();
     const transfer = new Transfer(
@@ -59,83 +59,82 @@ describe('TransferService', () => {
       makeBankAccount(makeCustomer(), AccountStatus.ACTIVE, 0),
       5000, NOW, makeUser(SystemRole.NATURAL_CUSTOMER, owner), TransferStatus.PENDING
     );
-    service.createTransfer(makeUser(SystemRole.BUSINESS_OPERATOR), transfer);
+    await service.createTransfer(makeUser(SystemRole.BUSINESS_OPERATOR), transfer);
     expect(transfer.transferStatus.code).toBe(TransferStatus.WAITING_FOR_APPROVAL.code);
   });
 
-  it('rejects invalid transfer amounts and unauthorized creation', () => {
+  it('rejects invalid transfer amounts and unauthorized creation', async () => {
     const { service, authz } = build();
     const owner = makeCustomer();
     expect(() => {
-      const zero = new Transfer('tr-zero', makeBankAccount(owner, AccountStatus.ACTIVE, 100), makeBankAccount(makeCustomer(), AccountStatus.ACTIVE, 0), 0, NOW, makeUser(SystemRole.NATURAL_CUSTOMER));
-      service.createTransfer(makeUser(SystemRole.BUSINESS_OPERATOR), zero);
+      new Transfer('tr-zero', makeBankAccount(owner, AccountStatus.ACTIVE, 100), makeBankAccount(makeCustomer(), AccountStatus.ACTIVE, 0), 0, NOW, makeUser(SystemRole.NATURAL_CUSTOMER));
     }).toThrow('Transfer amount must be positive');
 
     (authz.canExecute as ReturnType<typeof vi.fn>).mockReturnValue(false);
-    expect(() => service.createTransfer(makeUser(), buildTransferModel())).toThrow(UnauthorizedCustomerOperationException);
+    await expect(service.createTransfer(makeUser(), buildTransferModel())).rejects.toThrow(UnauthorizedCustomerOperationException);
   });
 
-  it('submits pending transfers for approval', () => {
+  it('submits pending transfers for approval', async () => {
     const { service, transfers } = build();
     (transfers.exists as ReturnType<typeof vi.fn>).mockReturnValue(true);
     const transfer = buildTransferModel();
-    expect(service.submitForApproval(makeUser(), transfer).transferStatus).toBe(TransferStatus.WAITING_FOR_APPROVAL);
+    expect((await service.submitForApproval(makeUser(), transfer)).transferStatus).toBe(TransferStatus.WAITING_FOR_APPROVAL);
   });
 
-  it('approves and rejects waiting transfers only with authority', () => {
+  it('approves and rejects waiting transfers only with authority', async () => {
     const { service, transfers, authz } = build();
     (transfers.exists as ReturnType<typeof vi.fn>).mockReturnValue(true);
     const approved = buildTransferModel();
     approved.submitForApproval();
-    expect(service.approveTransfer(makeUser(SystemRole.BUSINESS_SUPERVISOR), approved).transferStatus.code).toBe(TransferStatus.APPROVED.code);
+    expect((await service.approveTransfer(makeUser(SystemRole.BUSINESS_SUPERVISOR), approved)).transferStatus.code).toBe(TransferStatus.APPROVED.code);
 
     const rejected = buildTransferModel();
     rejected.submitForApproval();
-    expect(service.rejectTransfer(makeUser(SystemRole.INTERNAL_ANALYST), rejected).transferStatus.code).toBe(TransferStatus.REJECTED.code);
+    expect((await service.rejectTransfer(makeUser(SystemRole.INTERNAL_ANALYST), rejected)).transferStatus.code).toBe(TransferStatus.REJECTED.code);
 
     (authz.canApprove as ReturnType<typeof vi.fn>).mockReturnValue(false);
-    expect(() => service.approveTransfer(makeUser(SystemRole.NATURAL_CUSTOMER), buildTransferModel())).toThrow(UnauthorizedApprovalException);
-    expect(() => service.rejectTransfer(makeUser(SystemRole.NATURAL_CUSTOMER), buildTransferModel())).toThrow(UnauthorizedApprovalException);
+    await expect(service.approveTransfer(makeUser(SystemRole.NATURAL_CUSTOMER), buildTransferModel())).rejects.toThrow(UnauthorizedApprovalException);
+    await expect(service.rejectTransfer(makeUser(SystemRole.NATURAL_CUSTOMER), buildTransferModel())).rejects.toThrow(UnauthorizedApprovalException);
   });
 
-  it('expires only transfers whose approval period elapsed', () => {
+  it('expires only transfers whose approval period elapsed', async () => {
     const { service, config, transfers } = build();
     (transfers.exists as ReturnType<typeof vi.fn>).mockReturnValue(true);
     const recent = buildTransferModel();
     recent.submitForApproval();
-    expect(() => service.expireTransfer(makeUser(), recent)).toThrow(InvalidTransferException);
+    await expect(service.expireTransfer(makeUser(), recent)).rejects.toThrow(InvalidTransferException);
 
     (config.getTransferApprovalExpirationHours as ReturnType<typeof vi.fn>).mockReturnValue(0);
     const old = buildTransferModel();
     old.submitForApproval();
-    expect(service.expireTransfer(makeUser(), old).transferStatus).toBe(TransferStatus.EXPIRED);
+    expect((await service.expireTransfer(makeUser(), old)).transferStatus).toBe(TransferStatus.EXPIRED);
   });
 
-  it('executes an approved transfer moving funds between accounts', () => {
+  it('executes an approved transfer moving funds between accounts', async () => {
     const { service, accounts, transfers } = build();
     (transfers.exists as ReturnType<typeof vi.fn>).mockReturnValue(true);
     const transfer = buildTransferModel();
     transfer.submitForApproval();
     transfer.approve(makeUser(SystemRole.BUSINESS_SUPERVISOR), NOW);
-    service.executeTransfer(makeUser(SystemRole.TELLER_EMPLOYEE), transfer);
+    await service.executeTransfer(makeUser(SystemRole.TELLER_EMPLOYEE), transfer);
     expect(transfer.sourceAccount.currentBalance).toBe(500);
     expect(transfer.destinationAccount.currentBalance).toBe(500);
     expect(accounts.update).toHaveBeenCalledTimes(2);
   });
 
-  it('prevents execution of non-approved transfers', () => {
+  it('prevents execution of non-approved transfers', async () => {
     const { service, transfers } = build();
     (transfers.exists as ReturnType<typeof vi.fn>).mockReturnValue(true);
     const transfer = buildTransferModel();
-    expect(() => service.executeTransfer(makeUser(), transfer)).toThrow(TransferNotApprovedException);
+    await expect(service.executeTransfer(makeUser(), transfer)).rejects.toThrow(TransferNotApprovedException);
   });
 
-  it('consults existing transfers and rejects unknown ones', () => {
+  it('consults existing transfers and rejects unknown ones', async () => {
     const { service, transfers } = build();
     const transfer = buildTransferModel();
     (transfers.find as ReturnType<typeof vi.fn>).mockReturnValue(transfer);
-    expect(service.consultTransfer(makeUser(), transfer)).toBe(transfer);
+    expect(await service.consultTransfer(makeUser(), transfer)).toBe(transfer);
     (transfers.find as ReturnType<typeof vi.fn>).mockReturnValue(null);
-    expect(() => service.consultTransfer(makeUser(), transfer)).toThrow(TransferNotFoundException);
+    await expect(service.consultTransfer(makeUser(), transfer)).rejects.toThrow(TransferNotFoundException);
   });
 });

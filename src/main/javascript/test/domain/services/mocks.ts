@@ -13,70 +13,73 @@ import { BusinessConfigurationPort } from '../../../application/domain/ports/out
 
 export function customerRepo(): CustomerRepositoryPort {
   return {
-    save: vi.fn((c) => c),
-    findByIdentification: vi.fn(() => null),
-    findByEmail: vi.fn(() => null),
-    existsByIdentification: vi.fn(() => false),
-    existsByEmail: vi.fn(() => false),
-    findAll: vi.fn(() => []),
-    update: vi.fn(),
+    save: vi.fn(async (c) => c),
+    findByIdentification: vi.fn(async () => null),
+    findByEmail: vi.fn(async () => null),
+    existsByIdentification: vi.fn(async () => false),
+    existsByEmail: vi.fn(async () => false),
+    findAll: vi.fn(async () => []),
+    update: vi.fn(async () => {}),
   };
 }
 
 export function userRepo(): UserRepositoryPort {
   return {
-    save: vi.fn((u) => u),
-    findByUsername: vi.fn(() => null),
-    findById: vi.fn(() => null),
-    existsByUsername: vi.fn(() => false),
-    update: vi.fn(),
+    save: vi.fn(async (u) => u),
+    findByUsername: vi.fn(async () => null),
+    findById: vi.fn(async () => null),
+    existsByUsername: vi.fn(async () => false),
+    update: vi.fn(async () => {}),
   };
 }
 
 export function accountRepo(): BankAccountRepositoryPort {
   return {
-    save: vi.fn((a) => a),
-    find: vi.fn(() => null),
-    exists: vi.fn(() => false),
-    update: vi.fn(),
-    findAllByOwner: vi.fn(() => []),
+    save: vi.fn(async (a) => a),
+    find: vi.fn(async () => null),
+    exists: vi.fn(async () => false),
+    update: vi.fn(async () => {}),
+    findAllByOwner: vi.fn(async () => []),
   };
 }
 
 export function loanRepo(): LoanRepositoryPort {
   return {
-    save: vi.fn((l) => l),
-    find: vi.fn(() => null),
-    exists: vi.fn(() => false),
-    update: vi.fn(),
-    findAllByApplicant: vi.fn(() => []),
+    save: vi.fn(async (l) => l),
+    find: vi.fn(async () => null),
+    exists: vi.fn(async () => false),
+    update: vi.fn(async () => {}),
+    findAllByApplicant: vi.fn(async () => []),
   };
 }
 
 export function transferRepo(): TransferRepositoryPort {
   return {
-    save: vi.fn((t) => t),
-    find: vi.fn(() => null),
-    exists: vi.fn(() => false),
-    update: vi.fn(),
+    save: vi.fn(async (t) => t),
+    find: vi.fn(async () => null),
+    exists: vi.fn(async () => false),
+    update: vi.fn(async () => {}),
+    findAll: vi.fn(async () => []),
   };
 }
 
 export function operationRepo(): OperationRepositoryPort {
   return {
-    save: vi.fn((o) => o),
-    find: vi.fn(() => null),
-    findByProduct: vi.fn(() => []),
-    exists: vi.fn(() => false),
+    save: vi.fn(async (o) => o),
+    find: vi.fn(async () => null),
+    findByProduct: vi.fn(async () => []),
+    exists: vi.fn(async () => false),
+    findAll: vi.fn(async () => []),
   };
 }
 
 export function auditRepo(): AuditLogRepositoryPort {
   return {
-    save: vi.fn((a) => a),
-    find: vi.fn(() => null),
-    findByProduct: vi.fn(() => []),
-    exists: vi.fn(() => false),
+    save: vi.fn(async (a) => a),
+    find: vi.fn(async () => null),
+    findByProduct: vi.fn(async () => []),
+    exists: vi.fn(async () => false),
+    findAll: vi.fn(async () => []),
   };
 }
 

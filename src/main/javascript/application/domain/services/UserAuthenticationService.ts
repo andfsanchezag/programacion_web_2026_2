@@ -3,12 +3,7 @@ import { SystemRole } from '../valueobjects/SystemRole';
 import { UserRepositoryPort } from '../ports/out/UserRepositoryPort';
 import { PasswordServicePort } from '../ports/out/PasswordServicePort';
 import { JwtTokenServicePort } from '../ports/out/JwtTokenServicePort';
-import { RegisterCustomerUserUseCase } from '../ports/in/RegisterCustomerUserUseCase';
-import { RegisterEmployeeUserUseCase } from '../ports/in/RegisterEmployeeUserUseCase';
-import { LoginSessionUseCase, AuthenticationResult } from '../ports/in/LoginUseCase';
-import { LogoutUseCase } from '../ports/in/LogoutUseCase';
-import { ConsultUserUseCase } from '../ports/in/ConsultUserUseCase';
-import { ChangeUserStatusUseCase } from '../ports/in/ChangeUserStatusUseCase';
+import { AuthenticationResult } from '../ports/in/PublicAccessPort';
 import {
   UserAlreadyExistsException,
   UserNotFoundException,
@@ -23,13 +18,7 @@ import {
  * UserAuthenticationService - Coordinates user registration and authentication
  * while preserving domain integrity.
  */
-export class UserAuthenticationService implements
-  RegisterCustomerUserUseCase,
-  RegisterEmployeeUserUseCase,
-  LoginSessionUseCase,
-  LogoutUseCase,
-  ConsultUserUseCase,
-  ChangeUserStatusUseCase {
+export class UserAuthenticationService {
 
   constructor(
     private readonly userRepository: UserRepositoryPort,
@@ -37,34 +26,34 @@ export class UserAuthenticationService implements
     private readonly jwtTokenService: JwtTokenServicePort
   ) {}
 
-  registerCustomerUser(user: User): User {
+  async registerCustomerUser(user: User): Promise<User> {
     if (user.customer === null || user.customer === undefined) {
       throw new InvalidUserException(
         'A customer user must be associated with an existing customer'
       );
     }
-    if (this.userRepository.existsByUsername(user)) {
+    if (await this.userRepository.existsByUsername(user)) {
       throw new UserAlreadyExistsException('Username is already in use');
     }
     user.replacePassword(this.passwordService.encode(user.passwordHash));
     return this.userRepository.save(user);
   }
 
-  registerEmployeeUser(registeredBy: User, user: User): User {
+  async registerEmployeeUser(registeredBy: User, user: User): Promise<User> {
     if (!registeredBy.role.equals(SystemRole.INTERNAL_ANALYST)) {
       throw new UnauthorizedUserOperationException(
         'Only an Internal Analyst can register employee users'
       );
     }
-    if (this.userRepository.existsByUsername(user)) {
+    if (await this.userRepository.existsByUsername(user)) {
       throw new UserAlreadyExistsException('Username is already in use');
     }
     user.replacePassword(this.passwordService.encode(user.passwordHash));
     return this.userRepository.save(user);
   }
 
-  login(user: User): AuthenticationResult {
-    const stored = this.findByUsername(user.username);
+  async login(user: User): Promise<AuthenticationResult> {
+    const stored = await this.findByUsername(user.username);
     if (!stored.canAuthenticate()) {
       throw new UserNotActiveException('User is not active');
     }
@@ -79,43 +68,43 @@ export class UserAuthenticationService implements
     };
   }
 
-  logout(user: User): void {
-    this.findByUsername(user.username);
+  async logout(user: User): Promise<void> {
+    await this.findByUsername(user.username);
   }
 
-  consult(requestingUser: User, user: User): User {
+  async consult(requestingUser: User, user: User): Promise<User> {
     this.assertCanConsult(requestingUser, user);
-    const found = this.userRepository.findById(user);
+    const found = await this.userRepository.findById(user);
     if (found === null || found === undefined) {
       throw new UserNotFoundException('User not found');
     }
     return found;
   }
 
-  changeStatus(requestingUser: User, user: User): User {
+  async changeStatus(requestingUser: User, user: User): Promise<User> {
     if (!requestingUser.role.equals(SystemRole.INTERNAL_ANALYST)) {
       throw new UnauthorizedUserOperationException(
         'User is not authorized to change user status'
       );
     }
-    this.ensureExists(user);
+    await this.ensureExists(user);
     if (!user.status.isValid()) {
       throw new InvalidUserStatusException('Invalid user status');
     }
-    this.userRepository.update(user);
+    await this.userRepository.update(user);
     return user;
   }
 
-  private findByUsername(username: string): User {
-    const stored = this.userRepository.findByUsername(User.forUsernameLookup(username));
+  private async findByUsername(username: string): Promise<User> {
+    const stored = await this.userRepository.findByUsername(User.forUsernameLookup(username));
     if (stored === null || stored === undefined) {
       throw new UserNotFoundException('User not found');
     }
     return stored;
   }
 
-  private ensureExists(user: User): void {
-    const found = this.userRepository.findById(user);
+  private async ensureExists(user: User): Promise<void> {
+    const found = await this.userRepository.findById(user);
     if (found === null || found === undefined) {
       throw new UserNotFoundException('User not found');
     }

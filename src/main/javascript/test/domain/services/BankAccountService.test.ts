@@ -22,84 +22,84 @@ function build() {
 }
 
   describe('BankAccountService', () => {
-  it('opens an account for an eligible customer', () => {
+  it('opens an account for an eligible customer', async () => {
     const { service, accounts, operations, audits } = build();
     const owner = makeCustomer();
     const account = makeBankAccount(owner, AccountStatus.PENDING_ACTIVATION, 0);
-    const saved = service.openAccount(makeUser(SystemRole.TELLER_EMPLOYEE), account);
+    const saved = await service.openAccount(makeUser(SystemRole.TELLER_EMPLOYEE), account);
     expect(saved.accountStatus).toBe(AccountStatus.ACTIVE);
     expect(accounts.save).toHaveBeenCalledWith(account);
     expect(operations.save).toHaveBeenCalled();
     expect(audits.save).toHaveBeenCalled();
   });
 
-  it('rejects accounts for non-operational owners and unauthorized users', () => {
+  it('rejects accounts for non-operational owners and unauthorized users', async () => {
     const { service, customers, authz } = build();
     const blockedOwner = makeCustomer();
     blockedOwner.block();
     (customers.findByIdentification as ReturnType<typeof vi.fn>).mockReturnValue(blockedOwner);
-    expect(() => service.openAccount(makeUser(), makeBankAccount(blockedOwner))).toThrow(CustomerNotEligibleException);
+    await expect(service.openAccount(makeUser(), makeBankAccount(blockedOwner))).rejects.toThrow(CustomerNotEligibleException);
 
     (customers.findByIdentification as ReturnType<typeof vi.fn>).mockReturnValue(null);
-    expect(() => service.openAccount(makeUser(), makeBankAccount(makeCustomer()))).toThrow(CustomerNotEligibleException);
+    await expect(service.openAccount(makeUser(), makeBankAccount(makeCustomer()))).rejects.toThrow(CustomerNotEligibleException);
 
     (customers.findByIdentification as ReturnType<typeof vi.fn>).mockImplementation((owner) => owner);
     (authz.canExecute as ReturnType<typeof vi.fn>).mockReturnValue(false);
-    expect(() => service.openAccount(makeUser(), makeBankAccount(makeCustomer()))).toThrow(UnauthorizedCustomerOperationException);
+    await expect(service.openAccount(makeUser(), makeBankAccount(makeCustomer()))).rejects.toThrow(UnauthorizedCustomerOperationException);
   });
 
-  it('consults an existing account and its balance', () => {
+  it('consults an existing account and its balance', async () => {
     const { service, accounts } = build();
     const acc = makeBankAccount(makeCustomer(), AccountStatus.ACTIVE, 250);
     (accounts.exists as ReturnType<typeof vi.fn>).mockReturnValue(true);
     (accounts.find as ReturnType<typeof vi.fn>).mockReturnValue(acc);
-    expect(service.consult(makeUser(SystemRole.TELLER_EMPLOYEE), acc)).toBe(acc);
-    expect(service.consultBalance(makeUser(SystemRole.TELLER_EMPLOYEE), acc)).toBe(250);
+    expect(await service.consult(makeUser(SystemRole.TELLER_EMPLOYEE), acc)).toBe(acc);
+    expect(await service.consultBalance(makeUser(SystemRole.TELLER_EMPLOYEE), acc)).toBe(250);
   });
 
-  it('throws when the consulted account does not exist', () => {
+  it('throws when the consulted account does not exist', async () => {
     const { service, accounts } = build();
     (accounts.exists as ReturnType<typeof vi.fn>).mockReturnValue(false);
-    expect(() => service.consult(makeUser(), makeBankAccount(makeCustomer()))).toThrow(BankAccountNotFoundException);
+    await expect(service.consult(makeUser(), makeBankAccount(makeCustomer()))).rejects.toThrow(BankAccountNotFoundException);
   });
 
-  it('deposits funds recording the business operation', () => {
+  it('deposits funds recording the business operation', async () => {
     const { service, accounts, operations } = build();
     const acc = makeBankAccount(makeCustomer(), AccountStatus.ACTIVE, 0);
     (accounts.exists as ReturnType<typeof vi.fn>).mockReturnValue(true);
-    service.deposit(makeUser(SystemRole.TELLER_EMPLOYEE), acc, 500);
+    await service.deposit(makeUser(SystemRole.TELLER_EMPLOYEE), acc, 500);
     expect(acc.currentBalance).toBe(500);
     expect(accounts.update).toHaveBeenCalledWith(acc);
     expect(operations.save).toHaveBeenCalled();
   });
 
-  it('withdraws funds recording the business operation', () => {
+  it('withdraws funds recording the business operation', async () => {
     const { service, accounts } = build();
     (accounts.exists as ReturnType<typeof vi.fn>).mockReturnValue(true);
     const acc = makeBankAccount(makeCustomer(), AccountStatus.ACTIVE, 300);
-    service.withdraw(makeUser(SystemRole.TELLER_EMPLOYEE), acc, 100);
+    await service.withdraw(makeUser(SystemRole.TELLER_EMPLOYEE), acc, 100);
     expect(acc.currentBalance).toBe(200);
   });
 
-  it('blocks, unblocks and closes accounts with authorization', () => {
+  it('blocks, unblocks and closes accounts with authorization', async () => {
     const { service } = build();
     const acc = makeBankAccount(makeCustomer(), AccountStatus.ACTIVE, 0);
-    service.block(makeUser(SystemRole.TELLER_EMPLOYEE), acc);
+    await service.block(makeUser(SystemRole.TELLER_EMPLOYEE), acc);
     expect(acc.accountStatus).toBe(AccountStatus.BLOCKED);
-    service.unblock(makeUser(SystemRole.TELLER_EMPLOYEE), acc);
+    await service.unblock(makeUser(SystemRole.TELLER_EMPLOYEE), acc);
     expect(acc.accountStatus).toBe(AccountStatus.ACTIVE);
-    service.close(makeUser(SystemRole.TELLER_EMPLOYEE), acc);
+    await service.close(makeUser(SystemRole.TELLER_EMPLOYEE), acc);
     expect(acc.accountStatus).toBe(AccountStatus.CLOSED);
   });
 
-  it('prevents unauthorized management of accounts', () => {
+  it('prevents unauthorized management of accounts', async () => {
     const { service, authz } = build();
     (authz.canExecute as ReturnType<typeof vi.fn>).mockReturnValue(false);
     const acc = makeBankAccount(makeCustomer(), AccountStatus.ACTIVE, 0);
-    expect(() => service.deposit(makeUser(), acc, 1)).toThrow(Error);
-    expect(() => service.withdraw(makeUser(), acc, 1)).toThrow(Error);
-    expect(() => service.block(makeUser(), acc)).toThrow(Error);
-    expect(() => service.unblock(makeUser(), acc)).toThrow(Error);
-    expect(() => service.close(makeUser(), acc)).toThrow(Error);
+    await expect(service.deposit(makeUser(), acc, 1)).rejects.toThrow(Error);
+    await expect(service.withdraw(makeUser(), acc, 1)).rejects.toThrow(Error);
+    await expect(service.block(makeUser(), acc)).rejects.toThrow(Error);
+    await expect(service.unblock(makeUser(), acc)).rejects.toThrow(Error);
+    await expect(service.close(makeUser(), acc)).rejects.toThrow(Error);
   });
 });

@@ -78,25 +78,25 @@ They must not receive DTOs, persistence entities, or primitive identifiers when 
 
 Incorrect:
 
-```text
+```java
 Optional<Customer> findById(String customerId);
 ```
 
 Correct:
 
-```text
-Customer findByIdentification(Customer customer);
+```java
+Optional<Customer> findByIdentification(Customer customer);
 ```
 
 Incorrect:
 
-```text
+```java
 void updateAccount(String accountId, BigDecimal balance);
 ```
 
 Correct:
 
-```text
+```java
 void update(BankAccount account);
 ```
 
@@ -114,14 +114,14 @@ Provides the Domain with persistence and query capabilities for `Customer`.
 
 ### Methods
 
-```text
-interface CustomerRepositoryPort {
+```java
+public interface CustomerRepositoryPort {
 
     Customer save(Customer customer);
 
-    Customer findByIdentification(Customer customer);
+    Optional<Customer> findByIdentification(Customer customer);
 
-    Customer findByEmail(Customer customer);
+    Optional<Customer> findByEmail(Customer customer);
 
     boolean existsByIdentification(Customer customer);
 
@@ -144,7 +144,7 @@ interface CustomerRepositoryPort {
 
 ---
 
-## 2. UserRepositoryPort
+# 2. UserRepositoryPort
 
 ### Responsibility
 
@@ -152,14 +152,14 @@ Provides persistence and query capabilities for `User`.
 
 ### Methods
 
-```text
-interface UserRepositoryPort {
+```java
+public interface UserRepositoryPort {
 
     User save(User user);
 
-    User findByUsername(User user);
+    Optional<User> findByUsername(User user);
 
-    User findById(User user);
+    Optional<User> findById(User user);
 
     boolean existsByUsername(User user);
 
@@ -177,7 +177,7 @@ interface UserRepositoryPort {
 
 ---
 
-## 3. BankAccountRepositoryPort
+# 3. BankAccountRepositoryPort
 
 ### Responsibility
 
@@ -185,12 +185,12 @@ Provides persistence and query capabilities for `BankAccount`.
 
 ### Methods
 
-```text
-interface BankAccountRepositoryPort {
+```java
+public interface BankAccountRepositoryPort {
 
     BankAccount save(BankAccount account);
 
-    BankAccount findByIdentifier(BankAccount account);
+    Optional<BankAccount> findByIdentifier(BankAccount account);
 
     List<BankAccount> findByOwner(Customer customer);
 
@@ -210,7 +210,7 @@ interface BankAccountRepositoryPort {
 
 ---
 
-## 4. LoanRepositoryPort
+# 4. LoanRepositoryPort
 
 ### Responsibility
 
@@ -218,12 +218,12 @@ Provides persistence and query capabilities for `Loan`.
 
 ### Methods
 
-```text
-interface LoanRepositoryPort {
+```java
+public interface LoanRepositoryPort {
 
     Loan save(Loan loan);
 
-    Loan findByIdentifier(Loan loan);
+    Optional<Loan> findByIdentifier(Loan loan);
 
     List<Loan> findByApplicant(Customer customer);
 
@@ -242,7 +242,7 @@ interface LoanRepositoryPort {
 
 ---
 
-## 5. TransferRepositoryPort
+# 5. TransferRepositoryPort
 
 ### Responsibility
 
@@ -250,12 +250,12 @@ Provides persistence and query capabilities for `Transfer`.
 
 ### Methods
 
-```text
-interface TransferRepositoryPort {
+```java
+public interface TransferRepositoryPort {
 
     Transfer save(Transfer transfer);
 
-    Transfer findByIdentifier(Transfer transfer);
+    Optional<Transfer> findByIdentifier(Transfer transfer);
 
     List<Transfer> findBySourceAccount(BankAccount account);
 
@@ -278,7 +278,7 @@ interface TransferRepositoryPort {
 
 ---
 
-## 6. OperationRepositoryPort
+# 6. OperationRepositoryPort
 
 ### Responsibility
 
@@ -288,12 +288,12 @@ Provides persistence for business `Operation` records.
 
 ### Methods
 
-```text
-interface OperationRepositoryPort {
+```java
+public interface OperationRepositoryPort {
 
     Operation save(Operation operation);
 
-    Operation findById(Operation operation);
+    Optional<Operation> findById(Operation operation);
 
     List<Operation> findByUser(User user);
 
@@ -311,7 +311,7 @@ interface OperationRepositoryPort {
 
 ---
 
-## 7. AuditLogRepositoryPort
+# 7. AuditLogRepositoryPort
 
 ### Responsibility
 
@@ -321,8 +321,8 @@ The implementation is expected to use MongoDB, while the Domain remains complete
 
 ### Methods
 
-```text
-interface AuditLogRepositoryPort {
+```java
+public interface AuditLogRepositoryPort {
 
     AuditLog save(AuditLog auditLog);
 
@@ -341,7 +341,7 @@ interface AuditLogRepositoryPort {
 
 ---
 
-## 8. PasswordServicePort
+# 8. PasswordServicePort
 
 ### Responsibility
 
@@ -351,8 +351,8 @@ The Domain must not depend directly on BCrypt, Argon2, Spring Security, or anoth
 
 ### Methods
 
-```text
-interface PasswordServicePort {
+```java
+public interface PasswordServicePort {
 
     boolean matches(User user);
 
@@ -383,7 +383,7 @@ Password Hashing Library
 
 ---
 
-## 9. JwtServicePort
+# 9. JwtServicePort
 
 ### Responsibility
 
@@ -393,8 +393,8 @@ The Domain must not depend directly on JWT libraries or security frameworks.
 
 ### Methods
 
-```text
-interface JwtServicePort {
+```java
+public interface JwtServicePort {
 
     String generateToken(User user);
 }
@@ -419,7 +419,7 @@ and other claims strictly required by the application.
 
 ---
 
-## 10. NotificationPort
+# 10. NotificationPort
 
 ### Responsibility
 
@@ -435,8 +435,8 @@ Possible channels include:
 
 If a `Notification` Domain Model exists, prefer:
 
-```text
-interface NotificationPort {
+```java
+public interface NotificationPort {
 
     void send(Notification notification);
 }
@@ -453,7 +453,7 @@ This is preferable to exposing transport-specific parameters such as email addre
 
 ---
 
-## 11. AuthorizationPort
+# 11. AuthorizationPort
 
 ### Responsibility
 
@@ -461,8 +461,8 @@ Provides external authorization information only when the authorization decision
 
 ### Methods
 
-```text
-interface AuthorizationPort {
+```java
+public interface AuthorizationPort {
 
     boolean isAuthorized(User user, Customer customer);
 
@@ -478,7 +478,7 @@ This port must not replace normal Domain validation.
 
 For example, if the authorization depends only on:
 
-```text
+```java
 user.getRole()
 ```
 
@@ -496,7 +496,7 @@ The port is reserved for information that must come from outside the Domain.
 
 ---
 
-## 12. BusinessConfigurationPort
+# 12. BusinessConfigurationPort
 
 ### Responsibility
 
@@ -510,8 +510,8 @@ Examples include:
 
 ### Methods
 
-```text
-interface BusinessConfigurationPort {
+```java
+public interface BusinessConfigurationPort {
 
     BigDecimal getTransferApprovalThreshold();
 
@@ -529,7 +529,7 @@ interface BusinessConfigurationPort {
 
 Instead of hardcoding:
 
-```text
+```java
 if (transfer.getAmount().compareTo(new BigDecimal("10000000")) > 0) {
     ...
 }

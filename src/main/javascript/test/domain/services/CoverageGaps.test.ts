@@ -31,7 +31,7 @@ const authz = new AuthorizationService();
 function loanProduct(ownerCustomer = makeCustomer()): Loan {
   return new Loan(
     'loan-auth', ownerCustomer, LoanType.PERSONAL, 1000, 0.1, 12,
-    makeBankAccount(makeCustomer(), AccountStatus.ACTIVE, 0), 0, LoanStatus.UNDER_REVIEW, null, null
+    makeBankAccount(ownerCustomer, AccountStatus.ACTIVE, 0), 0, LoanStatus.UNDER_REVIEW, null, null
   );
 }
 
@@ -46,13 +46,13 @@ function transferProduct(): Transfer {
 }
 
 describe('AuthorizationService full branch coverage', () => {
-  it('validates permissions by user status', () => {
+  it('validates permissions by user status', async () => {
     expect(authz.hasPermission(makeUser())).toBe(true);
     expect(authz.hasPermission(null as never)).toBe(false);
     expect(authz.hasPermission(undefined as never)).toBe(false);
   });
 
-  it('grants customer access to employees and owners only', () => {
+  it('grants customer access to employees and owners only', async () => {
     const customer = makeCustomer();
     expect(authz.canAccessCustomer(makeUser(SystemRole.TELLER_EMPLOYEE), customer)).toBe(true);
     expect(authz.canAccessCustomer(makeUser(SystemRole.NATURAL_CUSTOMER, customer), customer)).toBe(true);
@@ -60,7 +60,7 @@ describe('AuthorizationService full branch coverage', () => {
     expect(authz.canAccessCustomer(makeUser(SystemRole.INTERNAL_ANALYST), customer)).toBe(true);
   });
 
-  it('controls product access for accounts', () => {
+  it('controls product access for accounts', async () => {
     const account = makeBankAccount(makeCustomer(), AccountStatus.ACTIVE, 0);
     expect(authz.canAccessProduct(makeUser(SystemRole.COMMERCIAL_EMPLOYEE), account)).toBe(true);
     expect(authz.canAccessProduct(makeUser(SystemRole.NATURAL_CUSTOMER, account.owner), account)).toBe(true);
@@ -68,7 +68,7 @@ describe('AuthorizationService full branch coverage', () => {
     expect(authz.canAccessProduct(undefined as never, account)).toBe(false);
   });
 
-  it('evaluates execution rights per product type', () => {
+  it('evaluates execution rights per product type', async () => {
     const account = makeBankAccount(makeCustomer(), AccountStatus.ACTIVE, 0);
     const operator = makeUser(SystemRole.BUSINESS_OPERATOR);
     const teller = makeUser(SystemRole.TELLER_EMPLOYEE);
@@ -89,7 +89,7 @@ describe('AuthorizationService full branch coverage', () => {
     expect(authz.canExecute(makeUser(SystemRole.NATURAL_CUSTOMER, transfer.sourceAccount.owner), transfer)).toBe(true);
   });
 
-  it('restricts approval authority by product and role', () => {
+  it('restricts approval authority by product and role', async () => {
     const analyst = makeUser(SystemRole.INTERNAL_ANALYST);
     const supervisor = makeUser(SystemRole.BUSINESS_SUPERVISOR);
     const natural = makeUser(SystemRole.NATURAL_CUSTOMER);

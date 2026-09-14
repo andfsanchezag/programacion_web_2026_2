@@ -23,92 +23,92 @@ function build() {
 }
 
 describe('UserAuthenticationService', () => {
-  it('registers a customer user with an encoded password', () => {
+  it('registers a customer user with an encoded password', async () => {
     const { service, users, passwords } = build();
     const user = makeUser(SystemRole.NATURAL_CUSTOMER, makeCustomer());
-    const saved = service.registerCustomerUser(user);
+    const saved = await service.registerCustomerUser(user);
     expect(saved).toBe(user);
     expect(users.save).toHaveBeenCalledWith(user);
     expect(passwords.encode).toHaveBeenCalledWith('raw-password');
   });
 
-  it('rejects customer users without a customer relationship', () => {
+  it('rejects customer users without a customer relationship', async () => {
     const { service } = build();
-    expect(() => service.registerCustomerUser(makeUser())).toThrow(InvalidUserException);
+    await expect(service.registerCustomerUser(makeUser())).rejects.toThrow(InvalidUserException);
   });
 
-  it('prevents duplicated usernames on registration', () => {
+  it('prevents duplicated usernames on registration', async () => {
     const { service, users } = build();
     (users.existsByUsername as ReturnType<typeof vi.fn>).mockReturnValue(true);
-    expect(() => service.registerCustomerUser(makeUser(SystemRole.NATURAL_CUSTOMER, makeCustomer()))).toThrow(UserAlreadyExistsException);
+    await expect(service.registerCustomerUser(makeUser(SystemRole.NATURAL_CUSTOMER, makeCustomer()))).rejects.toThrow(UserAlreadyExistsException);
   });
 
-  it('registers employee users only when performed by an Internal Analyst', () => {
+  it('registers employee users only when performed by an Internal Analyst', async () => {
     const { service } = build();
     const analyst = makeUser(SystemRole.INTERNAL_ANALYST);
     const teller = makeUser(SystemRole.TELLER_EMPLOYEE);
     const employee = makeUser(SystemRole.COMMERCIAL_EMPLOYEE);
-    expect(() => service.registerEmployeeUser(analyst, employee)).not.toThrow();
-    expect(() => service.registerEmployeeUser(teller, employee)).toThrow(UnauthorizedUserOperationException);
+    await service.registerEmployeeUser(analyst, employee);
+    await expect(service.registerEmployeeUser(teller, employee)).rejects.toThrow(UnauthorizedUserOperationException);
   });
 
-  it('authenticates an active user and issues a token', () => {
+  it('authenticates an active user and issues a token', async () => {
     const { service, users, tokens } = build();
     const stored = makeUser(SystemRole.NATURAL_CUSTOMER, null, UserStatus.ACTIVE);
     (users.findByUsername as ReturnType<typeof vi.fn>).mockReturnValue(stored);
-    const result = service.login(User.forUsernameLookup(stored.username));
+    const result = await service.login(User.forUsernameLookup(stored.username));
     expect(result.token).toBe('token-123');
     expect(result.username).toBe(stored.username);
     expect(tokens.generate).toHaveBeenCalledWith(stored);
   });
 
-  it('rejects unknown or inactive users during login', () => {
+  it('rejects unknown or inactive users during login', async () => {
     const { service, users } = build();
     (users.findByUsername as ReturnType<typeof vi.fn>).mockReturnValue(null);
-    expect(() => service.login(User.forUsernameLookup('ghost'))).toThrow(UserNotFoundException);
+    await expect(service.login(User.forUsernameLookup('ghost'))).rejects.toThrow(UserNotFoundException);
 
     (users.findByUsername as ReturnType<typeof vi.fn>).mockReturnValue(
       new User('u-9','i-9','N','e@x.com','p','a', SystemRole.NATURAL_CUSTOMER,'blocked','h', UserStatus.BLOCKED)
     );
-    expect(() => service.login(User.forUsernameLookup('blocked'))).toThrow(Error);
+    await expect(service.login(User.forUsernameLookup('blocked'))).rejects.toThrow(Error);
   });
 
-  it('validates credentials against the stored hash', () => {
+  it('validates credentials against the stored hash', async () => {
     const { service, users, passwords } = build();
     const stored = makeUser();
     (users.findByUsername as ReturnType<typeof vi.fn>).mockReturnValue(stored);
     (passwords.matches as ReturnType<typeof vi.fn>).mockReturnValue(false);
-    expect(() => service.login(User.forUsernameLookup(stored.username))).toThrow(InvalidCredentialsException);
+    await expect(service.login(User.forUsernameLookup(stored.username))).rejects.toThrow(InvalidCredentialsException);
   });
 
-  it('logs out existing users only', () => {
+  it('logs out existing users only', async () => {
     const { service, users } = build();
     (users.findByUsername as ReturnType<typeof vi.fn>).mockReturnValue(makeUser());
-    expect(() => service.logout(User.forUsernameLookup('user1'))).not.toThrow();
+    await service.logout(User.forUsernameLookup('user1'));
     (users.findByUsername as ReturnType<typeof vi.fn>).mockReturnValue(null);
-    expect(() => service.logout(User.forUsernameLookup('ghost'))).toThrow(UserNotFoundException);
+    await expect(service.logout(User.forUsernameLookup('ghost'))).rejects.toThrow(UserNotFoundException);
   });
 
-  it('allows consulting own profile and blocks strangers unless analyst', () => {
+  it('allows consulting own profile and blocks strangers unless analyst', async () => {
     const { service, users } = build();
     const target = makeUser();
     (users.findById as ReturnType<typeof vi.fn>).mockReturnValue(target);
-    expect(service.consult(target, target)).toBe(target);
-    expect(() => service.consult(makeUser(SystemRole.NATURAL_CUSTOMER), target)).toThrow(UnauthorizedUserOperationException);
-    expect(service.consult(makeUser(SystemRole.INTERNAL_ANALYST), target)).toBe(target);
+    expect(await service.consult(target, target)).toBe(target);
+    await expect(service.consult(makeUser(SystemRole.NATURAL_CUSTOMER), target)).rejects.toThrow(UnauthorizedUserOperationException);
+    expect(await service.consult(makeUser(SystemRole.INTERNAL_ANALYST), target)).toBe(target);
     (users.findById as ReturnType<typeof vi.fn>).mockReturnValue(null);
-    expect(() => service.consult(makeUser(SystemRole.INTERNAL_ANALYST), target)).toThrow(UserNotFoundException);
+    await expect(service.consult(makeUser(SystemRole.INTERNAL_ANALYST), target)).rejects.toThrow(UserNotFoundException);
   });
 
-  it('changes status only for Internal Analysts and validates statuses', () => {
+  it('changes status only for Internal Analysts and validates statuses', async () => {
     const { service, users } = build();
     (users.findById as ReturnType<typeof vi.fn>).mockReturnValue(makeUser());
     const target = makeUser();
-    expect(service.changeStatus(makeUser(SystemRole.INTERNAL_ANALYST), target)).toBe(target);
-    expect(() => service.changeStatus(makeUser(SystemRole.TELLER_EMPLOYEE), target)).toThrow(UnauthorizedUserOperationException);
+    expect(await service.changeStatus(makeUser(SystemRole.INTERNAL_ANALYST), target)).toBe(target);
+    await expect(service.changeStatus(makeUser(SystemRole.TELLER_EMPLOYEE), target)).rejects.toThrow(UnauthorizedUserOperationException);
     (users.findById as ReturnType<typeof vi.fn>).mockReturnValue(null);
-    expect(() => service.changeStatus(makeUser(SystemRole.INTERNAL_ANALYST), target)).toThrow(UserNotFoundException);
+    await expect(service.changeStatus(makeUser(SystemRole.INTERNAL_ANALYST), target)).rejects.toThrow(UserNotFoundException);
     (users.findById as ReturnType<typeof vi.fn>).mockReturnValue(makeUser());
-    expect(() => service.changeStatus(makeUser(SystemRole.INTERNAL_ANALYST), makeFakeInvalidStatusUser())).toThrow(InvalidUserStatusException);
+    await expect(service.changeStatus(makeUser(SystemRole.INTERNAL_ANALYST), makeFakeInvalidStatusUser())).rejects.toThrow(InvalidUserStatusException);
   });
 });

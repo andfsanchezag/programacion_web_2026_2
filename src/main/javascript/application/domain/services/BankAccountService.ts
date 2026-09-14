@@ -9,14 +9,6 @@ import { CustomerRepositoryPort } from '../ports/out/CustomerRepositoryPort';
 import { OperationRepositoryPort } from '../ports/out/OperationRepositoryPort';
 import { AuditLogRepositoryPort } from '../ports/out/AuditLogRepositoryPort';
 import { AuthorizationPort } from '../ports/out/AuthorizationPort';
-import { OpenBankAccountUseCase } from '../ports/in/OpenBankAccountUseCase';
-import { ConsultBankAccountUseCase } from '../ports/in/ConsultBankAccountUseCase';
-import { ConsultBalanceUseCase } from '../ports/in/ConsultBalanceUseCase';
-import { DepositFundsUseCase } from '../ports/in/DepositFundsUseCase';
-import { WithdrawFundsUseCase } from '../ports/in/WithdrawFundsUseCase';
-import { BlockAccountUseCase } from '../ports/in/BlockAccountUseCase';
-import { UnblockAccountUseCase } from '../ports/in/UnblockAccountUseCase';
-import { CloseAccountUseCase } from '../ports/in/CloseAccountUseCase';
 import {
   BankAccountNotFoundException,
   CustomerNotEligibleException,
@@ -27,15 +19,7 @@ import { UnauthorizedCustomerOperationException } from '../exceptions/customer-e
 /**
  * BankAccountService - Coordinates bank account business operations.
  */
-export class BankAccountService implements
-  OpenBankAccountUseCase,
-  ConsultBankAccountUseCase,
-  ConsultBalanceUseCase,
-  DepositFundsUseCase,
-  WithdrawFundsUseCase,
-  BlockAccountUseCase,
-  UnblockAccountUseCase,
-  CloseAccountUseCase {
+export class BankAccountService {
 
   constructor(
     private readonly bankAccountRepository: BankAccountRepositoryPort,
@@ -45,75 +29,75 @@ export class BankAccountService implements
     private readonly authorizationPort: AuthorizationPort
   ) {}
 
-  openAccount(requestingUser: User, bankAccount: BankAccount): BankAccount {
-    this.assertOwnerEligible(bankAccount.owner);
+  async openAccount(requestingUser: User, bankAccount: BankAccount): Promise<BankAccount> {
+    await this.assertOwnerEligible(bankAccount.owner);
     if (!this.authorizationPort.canExecute(requestingUser, bankAccount)) {
       throw new UnauthorizedCustomerOperationException(
         'User is not authorized to open this account'
       );
     }
     bankAccount.activate();
-    const saved = this.bankAccountRepository.save(bankAccount);
-    this.recordOperation(requestingUser, saved, OperationType.ACCOUNT_OPENING);
+    const saved = await this.bankAccountRepository.save(bankAccount);
+    await this.recordOperation(requestingUser, saved, OperationType.ACCOUNT_OPENING);
     return saved;
   }
 
-  consult(requestingUser: User, bankAccount: BankAccount): BankAccount {
-    this.assertCanOperate(requestingUser, bankAccount);
-    const found = this.bankAccountRepository.find(bankAccount);
+  async consult(requestingUser: User, bankAccount: BankAccount): Promise<BankAccount> {
+    await this.assertCanOperate(requestingUser, bankAccount);
+    const found = await this.bankAccountRepository.find(bankAccount);
     if (found === null || found === undefined) {
       throw new BankAccountNotFoundException('Bank account not found');
     }
     return found;
   }
 
-  consultBalance(requestingUser: User, bankAccount: BankAccount): number {
-    const found = this.consult(requestingUser, bankAccount);
+  async consultBalance(requestingUser: User, bankAccount: BankAccount): Promise<number> {
+    const found = await this.consult(requestingUser, bankAccount);
     return found.currentBalance;
   }
 
-  deposit(requestingUser: User, bankAccount: BankAccount, amount: number): BankAccount {
-    this.assertCanOperate(requestingUser, bankAccount);
+  async deposit(requestingUser: User, bankAccount: BankAccount, amount: number): Promise<BankAccount> {
+    await this.assertCanOperate(requestingUser, bankAccount);
     bankAccount.deposit(amount);
-    this.bankAccountRepository.update(bankAccount);
-    this.recordOperation(requestingUser, bankAccount, OperationType.DEPOSIT);
+    await this.bankAccountRepository.update(bankAccount);
+    await this.recordOperation(requestingUser, bankAccount, OperationType.DEPOSIT);
     return bankAccount;
   }
 
-  withdraw(requestingUser: User, bankAccount: BankAccount, amount: number): BankAccount {
-    this.assertCanOperate(requestingUser, bankAccount);
+  async withdraw(requestingUser: User, bankAccount: BankAccount, amount: number): Promise<BankAccount> {
+    await this.assertCanOperate(requestingUser, bankAccount);
     bankAccount.withdraw(amount);
-    this.bankAccountRepository.update(bankAccount);
-    this.recordOperation(requestingUser, bankAccount, OperationType.WITHDRAWAL);
+    await this.bankAccountRepository.update(bankAccount);
+    await this.recordOperation(requestingUser, bankAccount, OperationType.WITHDRAWAL);
     return bankAccount;
   }
 
-  block(requestingUser: User, bankAccount: BankAccount): BankAccount {
+  async block(requestingUser: User, bankAccount: BankAccount): Promise<BankAccount> {
     this.assertCanManage(requestingUser, bankAccount);
     bankAccount.block();
-    this.bankAccountRepository.update(bankAccount);
-    this.recordOperation(requestingUser, bankAccount, OperationType.ACCOUNT_BLOCKING);
+    await this.bankAccountRepository.update(bankAccount);
+    await this.recordOperation(requestingUser, bankAccount, OperationType.ACCOUNT_BLOCKING);
     return bankAccount;
   }
 
-  unblock(requestingUser: User, bankAccount: BankAccount): BankAccount {
+  async unblock(requestingUser: User, bankAccount: BankAccount): Promise<BankAccount> {
     this.assertCanManage(requestingUser, bankAccount);
     bankAccount.unblock();
-    this.bankAccountRepository.update(bankAccount);
-    this.recordOperation(requestingUser, bankAccount, OperationType.ACCOUNT_UNBLOCKING);
+    await this.bankAccountRepository.update(bankAccount);
+    await this.recordOperation(requestingUser, bankAccount, OperationType.ACCOUNT_UNBLOCKING);
     return bankAccount;
   }
 
-  close(requestingUser: User, bankAccount: BankAccount): BankAccount {
+  async close(requestingUser: User, bankAccount: BankAccount): Promise<BankAccount> {
     this.assertCanManage(requestingUser, bankAccount);
     bankAccount.close();
-    this.bankAccountRepository.update(bankAccount);
-    this.recordOperation(requestingUser, bankAccount, OperationType.ACCOUNT_CLOSING);
+    await this.bankAccountRepository.update(bankAccount);
+    await this.recordOperation(requestingUser, bankAccount, OperationType.ACCOUNT_CLOSING);
     return bankAccount;
   }
 
-  private assertOwnerEligible(owner: Customer): void {
-    const stored = this.customerRepository.findByIdentification(owner);
+  private async assertOwnerEligible(owner: Customer): Promise<void> {
+    const stored = await this.customerRepository.findByIdentification(owner);
     if (stored === null || stored === undefined || !stored.isOperational()) {
       throw new CustomerNotEligibleException(
         'The customer is not eligible to hold a bank account'
@@ -121,8 +105,8 @@ export class BankAccountService implements
     }
   }
 
-  private assertCanOperate(user: User, bankAccount: BankAccount): void {
-    this.assertExists(bankAccount);
+  private async assertCanOperate(user: User, bankAccount: BankAccount): Promise<void> {
+    await this.assertExists(bankAccount);
     if (!this.authorizationPort.canExecute(user, bankAccount)) {
       throw new UnauthorizedCustomerOperationException(
         'User is not authorized to operate this account'
@@ -138,17 +122,17 @@ export class BankAccountService implements
     }
   }
 
-  private assertExists(bankAccount: BankAccount): void {
-    if (!this.bankAccountRepository.exists(bankAccount)) {
+  private async assertExists(bankAccount: BankAccount): Promise<void> {
+    if (!(await this.bankAccountRepository.exists(bankAccount))) {
       throw new BankAccountNotFoundException('Bank account not found');
     }
   }
 
-  private recordOperation(
+  private async recordOperation(
     user: User,
     product: BankAccount,
     type: OperationType
-  ): void {
+  ): Promise<void> {
     const operation = new Operation(
       this.newId(),
       type,
@@ -156,7 +140,7 @@ export class BankAccountService implements
       user,
       product
     );
-    this.operationRepository.save(operation);
+    await this.operationRepository.save(operation);
     const audit = new AuditLog(
       this.newId(),
       type,
@@ -165,7 +149,7 @@ export class BankAccountService implements
       product,
       new Map<string, unknown>()
     );
-    this.auditRepository.save(audit);
+    await this.auditRepository.save(audit);
   }
 
   private newId(): string {

@@ -9,13 +9,6 @@ import { OperationRepositoryPort } from '../ports/out/OperationRepositoryPort';
 import { AuditLogRepositoryPort } from '../ports/out/AuditLogRepositoryPort';
 import { AuthorizationPort } from '../ports/out/AuthorizationPort';
 import { BusinessConfigurationPort } from '../ports/out/BusinessConfigurationPort';
-import { CreateTransferUseCase } from '../ports/in/CreateTransferUseCase';
-import { ExecuteTransferUseCase } from '../ports/in/ExecuteTransferUseCase';
-import { SubmitTransferForApprovalUseCase } from '../ports/in/SubmitTransferForApprovalUseCase';
-import { ApproveTransferUseCase } from '../ports/in/ApproveTransferUseCase';
-import { RejectTransferUseCase } from '../ports/in/RejectTransferUseCase';
-import { ExpireTransferUseCase } from '../ports/in/ExpireTransferUseCase';
-import { ConsultTransferUseCase } from '../ports/in/ConsultTransferUseCase';
 import {
   TransferNotFoundException,
   InvalidTransferException,
@@ -28,14 +21,7 @@ import { UnauthorizedCustomerOperationException } from '../exceptions/customer-e
 /**
  * TransferService - Coordinates the transfer lifecycle business operations.
  */
-export class TransferService implements
-  CreateTransferUseCase,
-  ExecuteTransferUseCase,
-  SubmitTransferForApprovalUseCase,
-  ApproveTransferUseCase,
-  RejectTransferUseCase,
-  ExpireTransferUseCase,
-  ConsultTransferUseCase {
+export class TransferService {
 
   constructor(
     private readonly transferRepository: TransferRepositoryPort,
@@ -46,7 +32,7 @@ export class TransferService implements
     private readonly configuration: BusinessConfigurationPort
   ) {}
 
-  createTransfer(requestingUser: User, transfer: Transfer): Transfer {
+  async createTransfer(requestingUser: User, transfer: Transfer): Promise<Transfer> {
     this.validateTransfer(transfer);
     if (!this.authorizationPort.canExecute(requestingUser, transfer)) {
       throw new UnauthorizedCustomerOperationException(
@@ -56,80 +42,80 @@ export class TransferService implements
     if (transfer.amount >= this.configuration.getTransferApprovalThreshold()) {
       transfer.submitForApproval();
     }
-    const saved = this.transferRepository.save(transfer);
-    this.recordOperation(requestingUser, saved, OperationType.TRANSFER_CREATION);
+    const saved = await this.transferRepository.save(transfer);
+    await this.recordOperation(requestingUser, saved, OperationType.TRANSFER_CREATION);
     return saved;
   }
 
-  submitForApproval(requestingUser: User, transfer: Transfer): Transfer {
-    this.assertExists(transfer);
+  async submitForApproval(requestingUser: User, transfer: Transfer): Promise<Transfer> {
+    await this.assertExists(transfer);
     transfer.submitForApproval();
-    this.transferRepository.update(transfer);
+    await this.transferRepository.update(transfer);
     return transfer;
   }
 
-  approveTransfer(requestingUser: User, transfer: Transfer): Transfer {
+  async approveTransfer(requestingUser: User, transfer: Transfer): Promise<Transfer> {
     if (!this.authorizationPort.canApprove(requestingUser, transfer)) {
       throw new UnauthorizedApprovalException(
         'User is not authorized to approve transfers'
       );
     }
-    this.assertExists(transfer);
+    await this.assertExists(transfer);
     transfer.approve(requestingUser, new Date());
-    this.transferRepository.update(transfer);
-    this.recordOperation(requestingUser, transfer, OperationType.TRANSFER_APPROVAL);
+    await this.transferRepository.update(transfer);
+    await this.recordOperation(requestingUser, transfer, OperationType.TRANSFER_APPROVAL);
     return transfer;
   }
 
-  rejectTransfer(requestingUser: User, transfer: Transfer): Transfer {
+  async rejectTransfer(requestingUser: User, transfer: Transfer): Promise<Transfer> {
     if (!this.authorizationPort.canApprove(requestingUser, transfer)) {
       throw new UnauthorizedApprovalException(
         'User is not authorized to reject transfers'
       );
     }
-    this.assertExists(transfer);
+    await this.assertExists(transfer);
     transfer.reject(new Date());
-    this.transferRepository.update(transfer);
-    this.recordOperation(requestingUser, transfer, OperationType.TRANSFER_REJECTION);
+    await this.transferRepository.update(transfer);
+    await this.recordOperation(requestingUser, transfer, OperationType.TRANSFER_REJECTION);
     return transfer;
   }
 
-  expireTransfer(requestingUser: User, transfer: Transfer): Transfer {
-    this.assertExists(transfer);
+  async expireTransfer(requestingUser: User, transfer: Transfer): Promise<Transfer> {
+    await this.assertExists(transfer);
     if (!this.hasApprovalExpirationPeriodElapsed(transfer)) {
       throw new InvalidTransferException('Transfer approval period has not elapsed');
     }
     transfer.expire();
-    this.transferRepository.update(transfer);
-    this.recordOperation(requestingUser, transfer, OperationType.TRANSFER_EXPIRATION);
+    await this.transferRepository.update(transfer);
+    await this.recordOperation(requestingUser, transfer, OperationType.TRANSFER_EXPIRATION);
     return transfer;
   }
 
-  executeTransfer(requestingUser: User, transfer: Transfer): Transfer {
+  async executeTransfer(requestingUser: User, transfer: Transfer): Promise<Transfer> {
     if (!this.authorizationPort.canExecute(requestingUser, transfer)) {
       throw new UnauthorizedCustomerOperationException(
         'User is not authorized to execute this transfer'
       );
     }
-    this.assertExists(transfer);
+    await this.assertExists(transfer);
     this.assertCanExecute(transfer);
     transfer.sourceAccount.transferOut(transfer.amount);
     transfer.destinationAccount.transferIn(transfer.amount);
-    this.bankAccountRepository.update(transfer.sourceAccount);
-    this.bankAccountRepository.update(transfer.destinationAccount);
+    await this.bankAccountRepository.update(transfer.sourceAccount);
+    await this.bankAccountRepository.update(transfer.destinationAccount);
     transfer.markExecuted();
-    this.transferRepository.update(transfer);
-    this.recordOperation(requestingUser, transfer, OperationType.TRANSFER_EXECUTION);
+    await this.transferRepository.update(transfer);
+    await this.recordOperation(requestingUser, transfer, OperationType.TRANSFER_EXECUTION);
     return transfer;
   }
 
-  consultTransfer(requestingUser: User, transfer: Transfer): Transfer {
+  async consultTransfer(requestingUser: User, transfer: Transfer): Promise<Transfer> {
     if (!this.authorizationPort.canExecute(requestingUser, transfer)) {
       throw new UnauthorizedCustomerOperationException(
         'User is not authorized to consult this transfer'
       );
     }
-    const found = this.transferRepository.find(transfer);
+    const found = await this.transferRepository.find(transfer);
     if (found === null || found === undefined) {
       throw new TransferNotFoundException('Transfer not found');
     }
@@ -157,15 +143,15 @@ export class TransferService implements
     return elapsedMs >= hours * 3600 * 1000;
   }
 
-  private assertExists(transfer: Transfer): void {
-    if (!this.transferRepository.exists(transfer)) {
+  private async assertExists(transfer: Transfer): Promise<void> {
+    if (!(await this.transferRepository.exists(transfer))) {
       throw new TransferNotFoundException('Transfer not found');
     }
   }
 
-  private recordOperation(user: User, product: Transfer, type: OperationType): void {
+  private async recordOperation(user: User, product: Transfer, type: OperationType): Promise<void> {
     const operation = new Operation(this.newId(), type, new Date(), user, product);
-    this.operationRepository.save(operation);
+    await this.operationRepository.save(operation);
     const audit = new AuditLog(
       this.newId(),
       type,
@@ -174,7 +160,7 @@ export class TransferService implements
       product,
       new Map<string, unknown>()
     );
-    this.auditRepository.save(audit);
+    await this.auditRepository.save(audit);
   }
 
   private newId(): string {
