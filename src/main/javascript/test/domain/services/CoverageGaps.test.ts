@@ -126,4 +126,13 @@ describe('AuthorizationService full branch coverage', () => {
     const business = makeUser(SystemRole.BUSINESS_CUSTOMER);
     expect(authz.canApprove(business, transferProduct())).toBe(true);
   });
+
+  it('User.customer setter reasigna el cliente asociado', async () => {
+    const user = makeUser(SystemRole.NATURAL_CUSTOMER, makeCustomer());
+    const other = makeCustomer();
+    user.customer = other;
+    expect(user.customer?.identification).toBe(other.identification);
+    user.customer = null;
+    expect(user.customer).toBeNull();
+  });
 });

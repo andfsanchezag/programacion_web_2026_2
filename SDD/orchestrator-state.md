@@ -1,5 +1,22 @@
 # Orchestrator State
 
+## Run record (run-07: cobertura 90% — 2026-09-23)
+- runId: run-2026-09-23-coverage-07
+- fase: `5A/5B` (cierre de cobertura) — **líneas 99.97%, ramas 96.44%, funciones 99.83%**
+- baseline: 71.50% líneas (adapters/mappers/useCases/controllers/LoanService sin cubrir)
+- archivos (solo tests + config, cero cambios de producción salvo 5 líneas de código
+  muerto en `errorHandler.ts` — rama `SyntaxError` con status inalcanzable):
+  - `vitest.config.ts` (excludes documentados: `server.ts`, `database/**` — exigen DB
+    vivas y se cubren con E2E/seed/smoke; `dtos.ts`, `entities.ts`,
+    `AuditLogDocument.ts` — solo tipos sin ejecutable)
+  - `test/adapters/schema-defs.test.ts`, `typeorm-mappers.test.ts`,
+    `typeorm-adapters.test.ts` (6 adapters con repos en memoria),
+    `rest-mappers.test.ts`, `rest-controllers.test.ts`, `usecases.test.ts` (8 roles),
+    ampliaciones en `persistence/security/LoanService/CoverageGaps.test.ts`
+- evidencia: `npm run build` → 0; `npm test` → 39 ficheros, **258/258**, 0;
+  `npm run coverage` → 99.97/96.44/99.83; `test:e2e` → 13/13
+- siguienteAccion: commit + push (a solicitud del usuario)
+
 ## Run record (run-06: seed de datos + endpoints muertos — 2026-09-23)
 - runId: run-2026-09-23-seed-06
 - fase: `REPAIR_CONTRACT` (3 endpoints muertos reparados al origen) + poblado §3-§10
@@ -311,7 +328,7 @@ Stack validado: TypeScript/Node (Express + TypeORM + Mongoose + Vitest)
 Fase seleccionada y motivo: run-05 — últimos faltantes (compensación, push-down Mongo, E2E); los 12 criterios §5 verificados con evidencia reciente
 Cambios realizados: compensación multi-recurso, findPaged, E2E automatizado, 404 catch-all, README (detalle en run-05)
 Comandos ejecutados y códigos de salida: build 0; test 0 (202/202, 33 ficheros); test:e2e 0 (13/13); compose build 0; up 3/3 healthy; down 0; re-up healthy + /health UP + E2E 13/13
-Pruebas: unitarias 202/202; integración real APROBADA; E2E 13/13 (unit 202 + e2e 13 = 215 verificaciones)
+Pruebas: unitarias 258/258; cobertura 99.97/96.44/99.83; integración real APROBADA; E2E 13/13 (unit 258 + e2e 13 = 271 verificaciones)
 Docker: build OK; 3/3 healthy; smoke + E2E OK; apagado y rearranque limpio OK (×2)
 Gates aprobados: §5.1–§5.12 todos (ver tabla por fases y dictamen run-05)
 Faltantes o bloqueos: ninguno exigible (mejoras no bloqueantes: transacciones distribuidas, documentar 6 rutas extra en SDD)

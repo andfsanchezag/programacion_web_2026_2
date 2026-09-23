@@ -95,8 +95,8 @@ export function classifyError(err: unknown): ErrorMapping {
     return { status: statusFromProp, code: explicitCode(e) ?? 'INTERNAL_ERROR' };
   }
 
-  // JSON malformado de body-parser: SyntaxError con status 400.
-  if (err instanceof SyntaxError && statusCodeOverride((e as { status?: unknown }).status) === 400) {
+  // JSON malformado (body-parser u otro JSON.parse): siempre 400.
+  if (err instanceof SyntaxError) {
     return { status: 400, code: 'INVALID_REQUEST' };
   }
 

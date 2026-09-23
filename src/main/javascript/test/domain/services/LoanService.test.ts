@@ -97,10 +97,99 @@ describe('LoanService', () => {
     expect(accounts.update).toHaveBeenCalledTimes(2);
   });
 
+  it('validates actor context, attributes and relationships on request', async () => {
+    const { service, customers } = buildLoan();
+    const applicant = makeCustomer();
+    const dest = (a: ReturnType<typeof makeCustomer>) =>
+      makeBankAccount(a, AccountStatus.ACTIVE, 0);
+    // Usuario cliente sin cliente asociado.
+    const loner = new Loan('lz', applicant, LoanType.PERSONAL, 100, 0.1, 6, dest(applicant));
+    await expect(service.requestLoan(makeUser(SystemRole.NATURAL_CUSTOMER), applicant, loner))
+      .rejects.toThrow('associated customer');
+    // Tasa negativa y plazo cero.
+    const me = makeUser(SystemRole.COMMERCIAL_EMPLOYEE);
+    const neg = new Loan('ln', applicant, LoanType.PERSONAL, 100, -0.5, 6, dest(applicant));
+    await expect(service.requestLoan(me, applicant, neg)).rejects.toThrow('interest rate');
+    const zeroTerm = new Loan('lt', applicant, LoanType.PERSONAL, 100, 0.1, 0, dest(applicant));
+    await expect(service.requestLoan(me, applicant, zeroTerm)).rejects.toThrow('term');
+    // Estado inicial distinto de UNDER_REVIEW.
+    const pre = new Loan('lp', applicant, LoanType.PERSONAL, 100, 0.1, 6, dest(applicant),
+      0, LoanStatus.APPROVED, null, null);
+    await expect(service.requestLoan(me, applicant, pre)).rejects.toThrow('UNDER_REVIEW');
+    // Estado inicial nulo y cuenta destino ausente.
+    const noStatus = new Loan('lns', applicant, LoanType.PERSONAL, 100, 0.1, 6, dest(applicant),
+      0, null as never, null, null);
+    await expect(service.requestLoan(me, applicant, noStatus)).rejects.toThrow('initial status');
+    const noDest = new Loan('lnd', applicant, LoanType.PERSONAL, 100, 0.1, 6, null as never);
+    await expect(service.requestLoan(me, applicant, noDest)).rejects.toThrow('destination account');
+    // Customer context distinto del solicitante.
+    const other = makeCustomer();
+    const ok = new Loan('lo', applicant, LoanType.PERSONAL, 100, 0.1, 6, dest(applicant));
+    await expect(service.requestLoan(me, other, ok)).rejects.toThrow('does not match');
+    // Cuenta destino de otro dueño.
+    const foreign = new Loan('lf', applicant, LoanType.PERSONAL, 100, 0.1, 6, dest(makeCustomer()));
+    await expect(service.requestLoan(me, applicant, foreign)).rejects.toThrow('disbursement');
+    // Solicitante inexistente en el repositorio.
+    (customers.findByIdentification as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+    await expect(service.requestLoan(me, applicant, ok)).rejects.toThrow('not eligible');
+    // Solicitante y tipo inválidos.
+    const noApplicant = new Loan('lna', null as never, LoanType.PERSONAL, 100, 0.1, 6, dest(applicant));
+    await expect(service.requestLoan(me, applicant, noApplicant)).rejects.toThrow('applicant');
+    const badType = new Loan('lnt', applicant, null as never, 100, 0.1, 6, dest(applicant));
+    await expect(service.requestLoan(me, applicant, badType)).rejects.toThrow('Loan type');
+  });
+
+  it('validates disburse preconditions and close/payment authorization', async () => {
+    const { service, loans, authz } = buildLoan();
+    const applicant = makeCustomer();
+    const dest = makeBankAccount(applicant, AccountStatus.ACTIVE, 0);
+    // Monto aprobado cero con estado APPROVED forzado.
+    const zeroAppr = new Loan('lz2', applicant, LoanType.PERSONAL, 1000, 0.1, 12, dest,
+      0, LoanStatus.APPROVED, new Date(), null);
+    await expect(service.disburseLoan(makeUser(SystemRole.INTERNAL_ANALYST), zeroAppr))
+      .rejects.toThrow('approved amount');
+    // Destino no operativo.
+    const blocked = makeBankAccount(applicant, AccountStatus.BLOCKED, 0);
+    const toBlocked = new Loan('lb2', applicant, LoanType.PERSONAL, 1000, 0.1, 12, blocked,
+      1000, LoanStatus.APPROVED, new Date(), null);
+    await expect(service.disburseLoan(makeUser(SystemRole.INTERNAL_ANALYST), toBlocked))
+      .rejects.toThrow('operational');
+    // Préstamo inexistente y actor sin permiso.
+    (loans.exists as ReturnType<typeof vi.fn>).mockResolvedValue(false);
+    await expect(service.consultLoan(makeUser(), buildLoanModel())).rejects.toThrow('not found');
+    (loans.exists as ReturnType<typeof vi.fn>).mockResolvedValue(true);
+    (authz.canExecute as ReturnType<typeof vi.fn>).mockReturnValue(false);
+    await expect(service.registerLoanPayment(makeUser(SystemRole.TELLER_EMPLOYEE), buildLoanModel(LoanStatus.DISBURSED)))
+      .rejects.toThrow('not authorized to operate');
+    (authz.canExecute as ReturnType<typeof vi.fn>).mockReturnValue(true);
+    // Pago sobre préstamo no desembolsado.
+    await expect(service.registerLoanPayment(makeUser(SystemRole.TELLER_EMPLOYEE), buildLoanModel()))
+      .rejects.toThrow();
+    // Cierre sin autoridad de aprobación.
+    (authz.canApprove as ReturnType<typeof vi.fn>).mockReturnValue(false);
+    await expect(service.closeLoan(makeUser(SystemRole.NATURAL_CUSTOMER), buildLoanModel(LoanStatus.DISBURSED)))
+      .rejects.toThrow('not authorized to close');
+  });
+
   it('registers payments on disbursed loans', async () => {
     const { service } = buildLoan();
     const loan = buildLoanModel(LoanStatus.DISBURSED);
     expect((await service.registerLoanPayment(makeUser(SystemRole.TELLER_EMPLOYEE), loan)).loanStatus).toBe(LoanStatus.DISBURSED);
+  });
+
+  it('rejects disburse without approval and approve for blocked applicants', async () => {    const { service } = buildLoan();
+    const applicant = makeCustomer();
+    const dest = makeBankAccount(applicant, AccountStatus.ACTIVE, 0);
+    const notApproved = new Loan('lnp', applicant, LoanType.PERSONAL, 1000, 0.1, 12, dest,
+      500, LoanStatus.UNDER_REVIEW, null, null);
+    await expect(service.disburseLoan(makeUser(SystemRole.INTERNAL_ANALYST), notApproved))
+      .rejects.toThrow('approved loan');
+    const blockedApplicant = makeCustomer();
+    blockedApplicant.block();
+    const blockedLoan = new Loan('lnb', blockedApplicant, LoanType.PERSONAL, 1000, 0.1, 12,
+      makeBankAccount(blockedApplicant, AccountStatus.ACTIVE, 0));
+    await expect(service.approveLoan(makeUser(SystemRole.INTERNAL_ANALYST), blockedLoan))
+      .rejects.toThrow('eligible');
   });
 
   it('closes loans only with approval authority', async () => {
@@ -128,5 +217,34 @@ describe('LoanService', () => {
     const { service, authz } = buildLoan();
     (authz.canAccessCustomer as ReturnType<typeof vi.fn>).mockReturnValue(false);
     await expect(service.consultLoan(makeUser(SystemRole.NATURAL_CUSTOMER), buildLoanModel())).rejects.toThrow(UnauthorizedCustomerOperationException);
+  });
+
+  it('rejects requests from customers operating for another applicant', async () => {    const { service } = buildLoan();
+    const applicant = makeCustomer();
+    const other = makeCustomer();
+    const actor = makeUser(SystemRole.NATURAL_CUSTOMER, other);
+    const loan = new Loan('lx', applicant, LoanType.PERSONAL, 100, 0.1, 6,
+      makeBankAccount(applicant, AccountStatus.ACTIVE, 0));
+    await expect(service.requestLoan(actor, applicant, loan)).rejects.toThrow('for this customer');
+  });
+
+  it('approves a prepared amount instead of the requested one', async () => {
+    const { service } = buildLoan();
+    const applicant = makeCustomer();
+    const dest = makeBankAccount(applicant, AccountStatus.ACTIVE, 0);
+    const prepared = new Loan('lpa', applicant, LoanType.PERSONAL, 1000, 0.1, 12, dest,
+      600, LoanStatus.UNDER_REVIEW, null, null);
+    const approved = await service.approveLoan(makeUser(SystemRole.INTERNAL_ANALYST), prepared);
+    expect(approved.loanStatus).toBe(LoanStatus.APPROVED);
+    expect(approved.approvedAmount).toBe(600);
+  });
+
+  it('requires a requesting user for loan operations', async () => {
+    const { service } = buildLoan();
+    const applicant = makeCustomer();
+    const loan = new Loan('lnu', applicant, LoanType.PERSONAL, 100, 0.1, 6,
+      makeBankAccount(applicant, AccountStatus.ACTIVE, 0));
+    await expect(service.requestLoan(null as never, applicant, loan)).rejects.toThrow('must be provided');
+    await expect(service.closeLoan(undefined as never, loan)).rejects.toThrow('must be provided');
   });
 });

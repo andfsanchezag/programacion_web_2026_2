@@ -71,6 +71,30 @@ describe('Persistence: mappers + adapters reales (Fase 2A/2B)', () => {
     expect(op.operationType.code).toBe('DEPOSIT');
   });
 
+  it('AuditLogMongoAdapter.findAll y findProduct por cadena', async () => {
+    const user = makeUser();
+    const owner = makeNaturalCustomer();
+    const product = makeBankAccount(owner);
+    const log = new AuditLog('audit-9', OperationType.DEPOSIT, new Date(), user, product,
+      new Map([['amount', 9]]));
+    const doc = AuditLogMongoMapper.toDocument(log);
+    const model = {
+      find: vi.fn(() => ({ lean: async () => [doc] })),
+    };
+    const users = { findByUsername: vi.fn(async () => user) };
+    const accounts = { find: vi.fn(async () => product) };
+    const loans = { find: vi.fn(async () => null) };
+    const transfers = { find: vi.fn(async () => null) };
+    const adapter = new AuditLogMongoAdapter(model as never, users as never, accounts as never, loans as never, transfers as never);
+    expect((await adapter.findAll()).length).toBe(1);
+    expect((await adapter.findByProduct(product)).length).toBe(1);
+    // Cadena findProduct: cuenta ausente -> préstamo presente.
+    const accountsMiss = { find: vi.fn(async () => null) };
+    const loansHit = { find: vi.fn(async () => product) };
+    const adapter2 = new AuditLogMongoAdapter(model as never, users as never, accountsMiss as never, loansHit as never, transfers as never);
+    expect((await adapter2.findAll()).length).toBe(1);
+  });
+
   it('AuditLogMongoAdapter.findPaged resuelve filtros y paginación en Mongo', async () => {
     const user = makeUser();
     const owner = makeNaturalCustomer();

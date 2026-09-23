@@ -71,6 +71,12 @@ describe('Global Exception Handler: clasificación determinística', () => {
     expect(classifyError('string failure')).toEqual({ status: 500, code: 'INTERNAL_ERROR' });
   });
 
+  it('503 con status numérico y SyntaxError sin status van a su categoría', () => {
+    expect(classifyError(Object.assign(new Error('down'), { status: 503 })))
+      .toEqual({ status: 503, code: 'DEPENDENCY_UNAVAILABLE' });
+    expect(classifyError(new SyntaxError('Unexpected token'))).toEqual({ status: 400, code: 'INVALID_REQUEST' });
+  });
+
   it('toErrorCode deriva SNAKE_CASE estable', () => {
     expect(toErrorCode('CustomerNotFoundException')).toBe('CUSTOMER_NOT_FOUND');
     expect(toErrorCode('InvalidTransferStatusTransitionException')).toBe('INVALID_TRANSFER_STATUS_TRANSITION');
