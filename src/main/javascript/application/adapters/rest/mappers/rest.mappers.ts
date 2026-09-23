@@ -23,12 +23,15 @@ import {
   RequestLoanRequestDTO, LoanResponseDTO, CreateTransferRequestDTO,
   TransferResponseDTO, OperationResponseDTO, AuditLogResponseDTO,
 } from '../dtos/dtos';
+import { reqString, reqEmail, reqPhone, reqDate, reqNumber } from '../validation/requestValidation';
 
-/** Mappers RequestDTO ↔ Domain ↔ ResponseDTO. Transporte puro, sin reglas de negocio. */
+/** Mappers RequestDTO ↔ Domain ↔ ResponseDTO. Valida el DTO ANTES de mapear. */
 export class AuthRestMapper {
   static loginToDomain(dto: LoginRequestDTO): User {
-    const user = User.forUsernameLookup(dto.username);
-    user.replacePassword(dto.password);
+    const username = reqString(dto?.username, 'username', { min: 3, max: 40 }) as string;
+    const password = reqString(dto?.password, 'password', { min: 8, max: 100 }) as string;
+    const user = User.forUsernameLookup(username);
+    user.replacePassword(password);
     return user;
   }
   static withPassword(user: User, password: string): { username: string; password: string } {
@@ -39,18 +42,31 @@ export class AuthRestMapper {
       user: { userId: user.userId, username: user.username, email: user.email, role: user.role.code } };
   }
   static naturalCustomerToDomain(dto: RegisterNaturalCustomerRequestDTO): NaturalCustomer {
-    return new NaturalCustomer(`cus-${dto.identification}`, dto.identification, dto.name,
-      dto.email, dto.phoneNumber, dto.address, SystemRole.NATURAL_CUSTOMER,
-      CustomerStatus.ACTIVE, new Date(), dto.identification);
+    const identification = reqString(dto?.identification, 'identification', { max: 30 }) as string;
+    reqDate(dto?.birthDate, 'birthDate', { past: true });
+    return new NaturalCustomer(`cus-${identification}`, identification,
+      reqString(dto?.name, 'name', { max: 120 }) as string,
+      reqEmail(dto?.email, 'email') as string,
+      reqPhone(dto?.phoneNumber, 'phoneNumber') as string,
+      reqString(dto?.address, 'address') as string,
+      SystemRole.NATURAL_CUSTOMER, CustomerStatus.ACTIVE, new Date(), identification);
   }
   static businessCustomerToDomain(dto: RegisterBusinessCustomerRequestDTO, rep: NaturalCustomer): BusinessCustomer {
-    return new BusinessCustomer(`cus-${dto.identification}`, dto.identification, dto.name,
-      dto.email, dto.phoneNumber, dto.address, SystemRole.BUSINESS_CUSTOMER,
-      CustomerStatus.ACTIVE, new Date(), dto.identification, rep);
+    const identification = reqString(dto?.identification, 'identification', { max: 30 }) as string;
+    return new BusinessCustomer(`cus-${identification}`, identification,
+      reqString(dto?.name, 'name', { max: 120 }) as string,
+      reqEmail(dto?.email, 'email') as string,
+      reqPhone(dto?.phoneNumber, 'phoneNumber') as string,
+      reqString(dto?.address, 'address') as string,
+      SystemRole.BUSINESS_CUSTOMER, CustomerStatus.ACTIVE, new Date(), identification, rep);
   }
   static userToDomain(dto: RegisterUserRequestDTO, customer: Customer | null): User {
-    return new User(`usr-${dto.username}`, dto.customerIdentification, dto.username,
-      '', '', '', SystemRole.fromCode(dto.role), dto.username, dto.password,
+    const username = reqString(dto?.username, 'username', { min: 3, max: 40 }) as string;
+    return new User(`usr-${username}`,
+      reqString(dto?.customerIdentification, 'customerIdentification', { max: 30 }) as string,
+      username, '', '', '', SystemRole.fromCode(reqString(dto?.role, 'role', { max: 40 }) as string),
+      username,
+      reqString(dto?.password, 'password', { min: 8, max: 100 }) as string,
       UserStatus.ACTIVE, customer);
   }
   static toUserResponse(u: User): UserResponseDTO {
@@ -76,15 +92,20 @@ export class BankAccountRestMapper {
     return { accountNumber: a.identifier, availableBalance: a.currentBalance, currency: a.currency.isoCode };
   }
   static openToDomain(accountNumber: string, type: string, owner: Customer, currencyIso: string): BankAccount {
-    return new BankAccount(accountNumber, AccountType.fromCode(type), owner,
+    return new BankAccount(
+      reqString(accountNumber, 'accountNumber', { max: 30 }) as string,
+      AccountType.fromCode(type), owner,
       Currency.fromIsoCode(currencyIso), new Date(), 0, AccountStatus.ACTIVE);
   }
 }
 
 export class LoanRestMapper {
   static requestToDomain(dto: RequestLoanRequestDTO, applicant: Customer, dest: BankAccount, loanId: string): Loan {
-    return new Loan(loanId, applicant, LoanType.fromCode(dto.loanType), dto.requestedAmount,
-      0, dto.termInMonths, dest, 0, LoanStatus.UNDER_REVIEW, null, null);
+    return new Loan(loanId, applicant, LoanType.fromCode(dto.loanType),
+      reqNumber(dto?.requestedAmount, 'requestedAmount', { min: 0.01 }) as number,
+      0,
+      reqNumber(dto?.termInMonths, 'termInMonths', { min: 1, integer: true }) as number,
+      dest, 0, LoanStatus.UNDER_REVIEW, null, null);
   }
   static toResponse(l: Loan): LoanResponseDTO {
     return { loanId: l.identifier, loanType: l.loanType.code, requestedAmount: l.requestedAmount,
@@ -95,7 +116,10 @@ export class LoanRestMapper {
 export class TransferRestMapper {
   static createToDomain(dto: CreateTransferRequestDTO, src: BankAccount, dst: BankAccount,
     createdBy: User, transferId: string): Transfer {
-    return new Transfer(transferId, src, dst, dto.amount, new Date(), createdBy, TransferStatus.PENDING, null, null);
+    reqString(dto?.description, 'description', { optional: true, max: 280 });
+    return new Transfer(transferId, src, dst,
+      reqNumber(dto?.amount, 'amount', { min: 0.01 }) as number,
+      new Date(), createdBy, TransferStatus.PENDING, null, null);
   }
   static toResponse(t: Transfer): TransferResponseDTO {
     return { transferId: t.identifier, sourceAccountNumber: t.sourceAccount.identifier,

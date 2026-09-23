@@ -13,6 +13,7 @@ import { Loan } from '../../../domain/models/Loan';
 import { Transfer } from '../../../domain/models/Transfer';
 import { Customer } from '../../../domain/models/Customer';
 import { AuthRestMapper, BankAccountRestMapper, LoanRestMapper, TransferRestMapper, OperationRestMapper } from '../mappers/rest.mappers';
+import { reqString, reqEmail, reqPhone, reqNumber } from '../validation/requestValidation';
 import {
   LoginRequestDTO, RegisterNaturalCustomerRequestDTO, RegisterBusinessCustomerRequestDTO,
   RegisterUserRequestDTO, UpdateCustomerProfileRequestDTO, RequestLoanRequestDTO,
@@ -75,7 +76,14 @@ export class NaturalCustomerController {
     return { status: 200 as const, body: AuthRestMapper.toCustomerResponse(await this.port.consultMyProfile(user)) };
   }
   async updateProfile(user: User, current: Customer, dto: UpdateCustomerProfileRequestDTO) {
-    if (dto.email) current.updateContactInformation(dto.email, current.phone, current.address);
+    const email = reqEmail(dto?.email, 'email', { optional: true });
+    const phone = reqPhone(dto?.phoneNumber, 'phoneNumber', { optional: true });
+    const address = reqString(dto?.address, 'address', { optional: true });
+    if (email) current.updateContactInformation(email, current.phone, current.address);
+    if (phone ?? address) {
+      current.updateContactInformation(
+        email ?? current.email, phone ?? current.phone, address ?? current.address);
+    }
     return { status: 200 as const, body: AuthRestMapper.toCustomerResponse(await this.port.updateMyProfile(user, current)) };
   }
   async getAccounts(user: User) {
@@ -130,11 +138,15 @@ export class BusinessSupervisorController {
 export class TellerController {
   constructor(private readonly port: TellerEmployeePort) {}
   async deposit(user: User, account: BankAccount, dto: DepositRequestDTO) {
-    const updated = await this.port.depositFunds(user, account, dto.amount);
+    const amount = reqNumber(dto?.amount, 'amount', { min: 0.01 }) as number;
+    reqString(dto?.reference, 'reference', { optional: true, max: 280 });
+    const updated = await this.port.depositFunds(user, account, amount);
     return { status: 200 as const, body: BankAccountRestMapper.toBalanceResponse(updated) };
   }
   async withdraw(user: User, account: BankAccount, dto: WithdrawalRequestDTO) {
-    const updated = await this.port.withdrawFunds(user, account, dto.amount);
+    const amount = reqNumber(dto?.amount, 'amount', { min: 0.01 }) as number;
+    reqString(dto?.clientIdentification, 'clientIdentification', { optional: true, max: 30 });
+    const updated = await this.port.withdrawFunds(user, account, amount);
     return { status: 200 as const, body: BankAccountRestMapper.toBalanceResponse(updated) };
   }
   async block(user: User, account: BankAccount) {
@@ -151,7 +163,9 @@ export class CommercialController {
 
 export class InternalAnalystController {
   constructor(private readonly port: InternalAnalystPort) {}
-  async approveLoan(user: User, loan: Loan, _dto: ApproveLoanRequestDTO) {
+  async approveLoan(user: User, loan: Loan, dto: ApproveLoanRequestDTO) {
+    reqNumber(dto?.approvedAmount, 'approvedAmount', { min: 0.01 });
+    reqNumber(dto?.interestRate, 'interestRate', { min: 0.01 });
     return { status: 200 as const, body: LoanRestMapper.toResponse(await this.port.approveLoan(user, loan)) };
   }
   async disburseLoan(user: User, loan: Loan) {

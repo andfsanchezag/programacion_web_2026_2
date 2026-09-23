@@ -48,15 +48,15 @@ describe('REST controllers (puertos simulados)', () => {
       registerCustomerUser: vi.fn(async (u: unknown) => u),
     });
     const c = new AuthController(port as never);
-    const login = await c.login({ username: user.username, password: 'pw' });
+    const login = await c.login({ username: user.username, password: 'Password123' });
     expect(login.status).toBe(200);
     expect(login.body.token).toBe('t');
     expect(await c.logout(user)).toMatchObject({ status: 204 });
-    const nat = await c.registerNatural({ identification: '1', name: 'N', email: 'n@x.com', phoneNumber: '1', address: 'a', birthDate: '2000-01-01' });
+    const nat = await c.registerNatural({ identification: '1', name: 'N', email: 'n@x.com', phoneNumber: '3001234567', address: 'a', birthDate: '2000-01-01' });
     expect(nat.status).toBe(201);
     const rep = makeNaturalCustomer();
-    expect((await c.registerBusiness({ identification: '9', name: 'B', email: 'b@x.com', phoneNumber: '2', address: 'b', legalRepresentativeIdentification: rep.identification }, rep)).status).toBe(201);
-    expect((await c.registerUser({ customerIdentification: '1', username: 'u', password: 'p', role: 'NATURAL_CUSTOMER' }, makeCustomer())).status).toBe(201);
+    expect((await c.registerBusiness({ identification: '9', name: 'B', email: 'b@x.com', phoneNumber: '6041234567', address: 'b', legalRepresentativeIdentification: rep.identification }, rep)).status).toBe(201);
+    expect((await c.registerUser({ customerIdentification: '1', username: 'user1', password: 'Password123', role: 'NATURAL_CUSTOMER' }, makeCustomer())).status).toBe(201);
   });
 
   it('NaturalCustomer: perfil, cuentas, balance, préstamo, transferencia, operaciones', async () => {

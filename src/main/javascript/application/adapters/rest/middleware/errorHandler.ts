@@ -108,7 +108,7 @@ export function classifyError(err: unknown): ErrorMapping {
   if (/NotFound(Exception|Error)$/.test(name)) return { status: 404, code: explicitCode(e) ?? toErrorCode(name) };
   if (/AlreadyExists(Exception)$/.test(name)) return { status: 409, code: explicitCode(e) ?? toErrorCode(name) };
   if (/^Unauthorized/.test(name)) return { status: 403, code: explicitCode(e) ?? 'FORBIDDEN' };
-  if (/Already|Transition|NotApproved|NotEligible|Disbursement|Insufficient/.test(name)) {
+  if (/Already|Transition|NotApproved|NotEligible|Disbursement|Insufficient|StatusException/.test(name)) {
     return { status: 409, code: explicitCode(e) ?? toErrorCode(name) };
   }
   if (/^Invalid/.test(name) || /SameAccount|InvalidDestination|InvalidAffectedProduct/.test(name)) {

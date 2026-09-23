@@ -19,6 +19,8 @@ import { TransferStatus } from './domain/valueobjects/TransferStatus';
 import { LoanType } from './domain/valueobjects/LoanType';
 import { AuthRestMapper, BankAccountRestMapper, LoanRestMapper, TransferRestMapper, OperationRestMapper } from './adapters/rest/mappers/rest.mappers';
 import { requestIdMiddleware, globalErrorHandler } from './adapters/rest/middleware/errorHandler';
+import { reqString, reqNumber, reqEmail } from './adapters/rest/validation/requestValidation';
+import { OperationType } from './domain/valueobjects/OperationType';
 
 const genId = (p: string): string => `${p}-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
 
@@ -144,9 +146,7 @@ async function main(): Promise<void> {
   server.put('/api/v1/natural-customer/profile', requireAuth, natural, run(async (req) => {
     const user = authed(req);
     const current = await app.useCases.natural.consultMyProfile(user);
-    const dto = req.body as { email?: string; phoneNumber?: string; address?: string };
-    current.updateContactInformation(dto.email ?? current.email, dto.phoneNumber ?? current.phone, dto.address ?? current.address);
-    return (await app.controllers.natural.updateProfile(user, current, dto));
+    return app.controllers.natural.updateProfile(user, current, req.body);
   }));
   server.get('/api/v1/natural-customer/accounts', requireAuth, natural, run(async (req) =>
     (await app.controllers.natural.getAccounts(authed(req)))));
@@ -169,6 +169,8 @@ async function main(): Promise<void> {
   }));
   server.post('/api/v1/natural-customer/loans/:id/payments', requireAuth, natural, run(async (req) => {
     const user = authed(req);
+    reqNumber(req.body?.amount, 'amount', { min: 0.01 });
+    reqString(req.body?.sourceAccountNumber, 'sourceAccountNumber', { max: 30 });
     const updated = await app.useCases.natural.registerLoanPayment(user, await resolveLoan(user, req.params.id));
     return LoanRestMapper.toResponse(updated);
   }));
@@ -198,10 +200,15 @@ async function main(): Promise<void> {
     AuthRestMapper.toCustomerResponse(await app.useCases.businessCustomer.consultCompanyProfile(authed(req)))));
   server.post('/api/v1/business-customer/users', requireAuth, biz, run(async (req) => {
     const user = authed(req);
+    reqString(req.body?.username, 'username', { min: 3, max: 40 });
+    reqString(req.body?.password, 'password', { min: 8, max: 100 });
+    reqEmail(req.body?.email, 'email');
+    reqString(req.body?.identification, 'identification', { max: 30 });
+    reqString(req.body?.name, 'name', { max: 120 });
     const domain = new User(genId('usr'), req.body.identification, req.body.name, req.body.email,
       '', '', SystemRole.fromCode(req.body.role), req.body.username, req.body.password,
       UserStatus.ACTIVE, user.customer);
-    return (await app.controllers.businessCustomer.registerCompanyUser(user, domain));
+    return app.controllers.businessCustomer.registerCompanyUser(user, domain);
   }));
   server.patch('/api/v1/business-customer/transfers/:id/approve', requireAuth, biz, run(async (req) => {
     const user = authed(req);
@@ -209,7 +216,8 @@ async function main(): Promise<void> {
   }));
   server.patch('/api/v1/business-customer/transfers/:id/reject', requireAuth, biz, run(async (req) => {
     const user = authed(req);
-    return (await app.controllers.businessCustomer.rejectTransfer(user, await resolveTransfer(user, req.params.id)));
+    reqString(req.body?.rejectionReason, 'rejectionReason', { max: 500 });
+    return app.controllers.businessCustomer.rejectTransfer(user, await resolveTransfer(user, req.params.id));
   }));
 
   // ---------- Business operator ----------
@@ -285,6 +293,11 @@ async function main(): Promise<void> {
   // ---------- Internal analyst ----------
   const analyst = requireRole(SystemRole.INTERNAL_ANALYST);
   server.post('/api/v1/internal-analyst/users/employee', requireAuth, analyst, run(async (req) => {
+    reqString(req.body?.username, 'username', { min: 3, max: 40 });
+    reqString(req.body?.password, 'password', { min: 8, max: 100 });
+    reqEmail(req.body?.email, 'email');
+    reqString(req.body?.identification, 'identification', { max: 30 });
+    reqString(req.body?.name, 'name', { max: 120 });
     const domain = new User(genId('usr'), req.body.identification, req.body.name, req.body.email,
       '', '', SystemRole.fromCode(req.body.role), req.body.username, req.body.password,
       UserStatus.ACTIVE, null);
@@ -323,6 +336,7 @@ async function main(): Promise<void> {
     const user = authed(req);
     // Contrato §10.5: filtros userId/operationType/cuenta + paginación page/size.
     const q = req.query as { accountNumber?: string; operationType?: string; userId?: string; page?: string; size?: string };
+    if (q.operationType !== undefined) OperationType.fromCode(q.operationType);
     const size = Math.max(1, Number(q.size ?? 20) || 20);
     const page = Math.max(0, Number(q.page ?? 0) || 0);
     if (q.accountNumber) {

@@ -77,6 +77,12 @@ describe('Global Exception Handler: clasificación determinística', () => {
     expect(classifyError(new SyntaxError('Unexpected token'))).toEqual({ status: 400, code: 'INVALID_REQUEST' });
   });
 
+  it('409 para violaciones de estado (StatusException)', async () => {
+    const { InvalidLoanStatusException } = await import('../../application/domain/exceptions/loan-errors');
+    expect(classifyError(new InvalidLoanStatusException('bad status')))
+      .toEqual({ status: 409, code: 'INVALID_LOAN_STATUS' });
+  });
+
   it('toErrorCode deriva SNAKE_CASE estable', () => {
     expect(toErrorCode('CustomerNotFoundException')).toBe('CUSTOMER_NOT_FOUND');
     expect(toErrorCode('InvalidTransferStatusTransitionException')).toBe('INVALID_TRANSFER_STATUS_TRANSITION');

@@ -1,5 +1,17 @@
 # Orchestrator State
 
+## Run record (run-08: validación DTO + Rest-validation — 2026-09-23)
+- runId: run-2026-09-23-validation-08
+- fase: `REPAIR_CONTRACT` (§6.1 DTOs) + doc `SDD/Adapters/Rest-validation.md`
+- archivos: `adapters/rest/validation/requestValidation.ts` (nuevo) + wiring en los
+  4 mappers, `TellerController`, `updateProfile`, `approveLoan` y rutas (reject,
+  payments, business-users, analyst-employee, audit-enum); `*StatusException`→409;
+  doc verificado línea por línea (derivación de códigos, filtros query)
+- evidencia: build 0; unit 264/264; cobertura 99.89/96.49/99.83; E2E 14/14;
+  seed 60/60; email inválido en vivo → 400 uniforme
+- decisión usuario: `rejectionReason` se valida pero no se persiste (sin cambio)
+- siguienteAccion: commit + push (solicitado)
+
 ## Run record (run-07: cobertura 90% — 2026-09-23)
 - runId: run-2026-09-23-coverage-07
 - fase: `5A/5B` (cierre de cobertura) — **líneas 99.97%, ramas 96.44%, funciones 99.83%**

@@ -106,10 +106,20 @@ describe('E2E banking API (Docker)', () => {
     const { res, json } = await req('/api/v1/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: USERNAME, password: 'Wrong!' }),
+      body: JSON.stringify({ username: USERNAME, password: 'WrongPass123' }),
     });
     expect(res.status).toBe(401);
     expectErrorShape(json, 401, 'INVALID_CREDENTIALS');
+  });
+
+  it('login con formato inválido (400)', async () => {
+    const { res, json } = await req('/api/v1/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: USERNAME, password: 'short' }),
+    });
+    expect(res.status).toBe(400);
+    expectErrorShape(json, 400, 'INVALID_REQUEST');
   });
 
   it('perfil con JWT (200)', async () => {

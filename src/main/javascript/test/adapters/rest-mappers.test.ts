@@ -17,10 +17,10 @@ import { makeCustomer, makeNaturalCustomer, makeBusinessCustomer, makeUser, make
 
 describe('REST mappers (DTO ↔ dominio)', () => {
   it('Auth: login, password, respuestas de usuario y clientes', () => {
-    const login = AuthRestMapper.loginToDomain({ username: 'u1', password: 'pw' });
-    expect(login.username).toBe('u1');
-    expect(login.passwordHash).toBe('pw');
-    expect(AuthRestMapper.withPassword(login, 'x')).toEqual({ username: 'u1', password: 'x' });
+    const login = AuthRestMapper.loginToDomain({ username: 'userone', password: 'Password123' });
+    expect(login.username).toBe('userone');
+    expect(login.passwordHash).toBe('Password123');
+    expect(AuthRestMapper.withPassword(login, 'x')).toEqual({ username: 'userone', password: 'x' });
 
     const user = makeUser(SystemRole.NATURAL_CUSTOMER, makeCustomer());
     expect(AuthRestMapper.toLoginResponse(user, 'tok', 3600)).toMatchObject({
@@ -33,7 +33,7 @@ describe('REST mappers (DTO ↔ dominio)', () => {
 
     const nat = AuthRestMapper.naturalCustomerToDomain({
       identification: '1017', name: 'N', email: 'n@x.com',
-      phoneNumber: '1', address: 'a', birthDate: '2000-01-01',
+      phoneNumber: '3001234567', address: 'a', birthDate: '2000-01-01',
     });
     expect(AuthRestMapper.toCustomerResponse(nat)).toMatchObject({
       identification: '1017', customerType: 'NATURAL',
@@ -41,7 +41,7 @@ describe('REST mappers (DTO ↔ dominio)', () => {
     const rep = makeNaturalCustomer();
     const biz = AuthRestMapper.businessCustomerToDomain({
       identification: '9001', name: 'B', email: 'b@x.com',
-      phoneNumber: '2', address: 'b', legalRepresentativeIdentification: rep.identification,
+      phoneNumber: '6041234567', address: 'b', legalRepresentativeIdentification: rep.identification,
     }, rep);
     const bizRes = AuthRestMapper.toCustomerResponse(biz);
     expect(bizRes.customerType).toBe('BUSINESS');
@@ -52,13 +52,13 @@ describe('REST mappers (DTO ↔ dominio)', () => {
   it('Auth: userToDomain con y sin cliente', () => {
     const customer = makeCustomer();
     const u = AuthRestMapper.userToDomain(
-      { customerIdentification: customer.identification, username: 'op1', password: 'pw', role: 'BUSINESS_OPERATOR' },
+      { customerIdentification: customer.identification, username: 'oper1x', password: 'Password123', role: 'BUSINESS_OPERATOR' },
       customer);
-    expect(u.userId).toBe('usr-op1');
+    expect(u.userId).toBe('usr-oper1x');
     expect(u.role).toBe(SystemRole.BUSINESS_OPERATOR);
     expect(u.customer?.identification).toBe(customer.identification);
     expect(AuthRestMapper.userToDomain(
-      { customerIdentification: 'x', username: 'e1', password: 'pw', role: 'TELLER_EMPLOYEE' }, null
+      { customerIdentification: 'x', username: 'teller1x', password: 'Password123', role: 'TELLER_EMPLOYEE' }, null
     ).customer).toBeNull();
   });
 
