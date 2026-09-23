@@ -66,4 +66,34 @@ export class AuditLogMongoAdapter implements AuditLogRepositoryPort {
     }
     return out;
   }
+
+  /**
+   * Paginación con filtros resueltos en MongoDB (índices en operationType,
+   * performedByUsername y affectedProductIdentifier). `performedBy` acepta
+   * username o userId: se resuelve a username vía el puerto de usuarios para
+   * que el conteo total sea exacto.
+   */
+  async findPaged(
+    filter: { operationType?: string; performedBy?: string; affectedProductIdentifier?: string },
+    page: number,
+    size: number,
+  ): Promise<{ content: AuditLog[]; totalElements: number; totalPages: number; page: number; size: number }> {
+    const p = Math.max(0, Math.floor(page) || 0);
+    const s = Math.max(1, Math.floor(size) || 20);
+    const query: Record<string, unknown> = {};
+    if (filter.operationType) query['operationType'] = filter.operationType;
+    if (filter.affectedProductIdentifier) query['affectedProductIdentifier'] = filter.affectedProductIdentifier;
+    if (filter.performedBy) {
+      const user = await this.users.findByUsername(User.forUsernameLookup(filter.performedBy));
+      query['performedByUsername'] = user ? user.username : filter.performedBy;
+    }
+    const totalElements: number = await this.model.countDocuments(query);
+    const docs: AuditLogRow[] = await this.model.find(query).skip(p * s).limit(s).lean();
+    const content: AuditLog[] = [];
+    for (const doc of docs) {
+      const full = await this.toDomain(doc);
+      if (full) content.push(full);
+    }
+    return { content, totalElements, totalPages: Math.max(1, Math.ceil(totalElements / s)), page: p, size: s };
+  }
 }

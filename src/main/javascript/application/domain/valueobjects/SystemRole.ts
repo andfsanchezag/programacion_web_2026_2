@@ -75,7 +75,10 @@ export class SystemRole extends DomainCatalog {
   }
 
   canApproveBusinessTransfers(): boolean {
-    return this.equals(SystemRole.BUSINESS_SUPERVISOR) || this.equals(SystemRole.INTERNAL_ANALYST);
+    // SDD §5.3/§5.4 + BusinessCustomerPort: la empresa aprueba/rechaza sus
+    // transferencias (además del supervisor y el analista).
+    return this.equals(SystemRole.BUSINESS_SUPERVISOR) || this.equals(SystemRole.INTERNAL_ANALYST) ||
+      this.equals(SystemRole.BUSINESS_CUSTOMER);
   }
 
   canApproveLoans(): boolean {

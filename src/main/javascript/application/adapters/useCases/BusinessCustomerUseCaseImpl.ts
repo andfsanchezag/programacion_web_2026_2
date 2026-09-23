@@ -1,6 +1,7 @@
 import { BusinessCustomerPort } from '../../domain/ports/in/BusinessCustomerPort';
 import { User } from '../../domain/models/User';
 import { BusinessCustomer } from '../../domain/models/BusinessCustomer';
+import { InvalidUserException } from '../../domain/exceptions/user-errors';
 import { BankAccount } from '../../domain/models/BankAccount';
 import { Loan } from '../../domain/models/Loan';
 import { Transfer } from '../../domain/models/Transfer';
@@ -31,7 +32,14 @@ export class BusinessCustomerUseCaseImpl implements BusinessCustomerPort {
     return this.customers.consultProducts(user, this.companyOf(user));
   }
   async registerCompanyUser(user: User, newCompanyUser: User): Promise<User> {
-    return this.users.registerEmployeeUser(user, newCompanyUser);
+    // SDD §5.2/Input-ports: la empresa registra usuarios delegados (operativos).
+    // Es un usuario de cliente asociado a la compañía, no un empleado global:
+    // no requiere analista (registerEmployeeUser es solo §10.1).
+    const company = this.companyOf(user);
+    if (!newCompanyUser.customer || newCompanyUser.customer.customerId !== company.customerId) {
+      throw new InvalidUserException('Delegated user must belong to the company');
+    }
+    return this.users.registerCustomerUser(newCompanyUser);
   }
   async consultCompanyAccounts(user: User): Promise<BankAccount[]> {
     return (await this.customers.consultProducts(user, this.companyOf(user)))

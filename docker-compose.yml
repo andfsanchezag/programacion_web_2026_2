@@ -1,4 +1,7 @@
-version: '3.8'
+# Decisión documentada (§0B.3): el host publica MySQL en 3308 porque el puerto 3306
+# está ocupado por un mysqld nativo. El canónico SDD sigue siendo 3306:3306
+# (.env.example). Dentro de la red Docker la app usa el nombre de servicio
+# (mysql-db:3306), nunca localhost.
 
 services:
   mysql-db:
@@ -12,6 +15,8 @@ services:
       - "3308:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+    networks:
+      - bank-net
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot_password"]
       interval: 10s
@@ -26,6 +31,53 @@ services:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+    networks:
+      - bank-net
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  bank-api:
+    build:
+      context: ./src/main/javascript
+      dockerfile: Dockerfile
+    image: bank-api:local
+    container_name: bank-api
+    restart: on-failure:5
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+      mongo-db:
+        condition: service_healthy
+    environment:
+      PORT: "8080"
+      MYSQL_HOST: mysql-db
+      MYSQL_PORT: "3306"
+      MYSQL_DATABASE: bank_db
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root_password
+      MONGO_URI: mongodb://mongo-db:27017/audit_db
+      # Valor de desarrollo (ver .env.example). No usar en producción.
+      JWT_SECRET: 9a6f8b12c34d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f
+      JWT_EXPIRES_IN: "3600"
+      TRANSFER_APPROVAL_THRESHOLD: "10000000"
+      TRANSFER_APPROVAL_EXPIRATION_HOURS: "24"
+    ports:
+      - "8080:8080"
+    networks:
+      - bank-net
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8080/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+networks:
+  bank-net:
+    driver: bridge
 
 volumes:
   mysql_data:

@@ -80,6 +80,7 @@ export function auditRepo(): AuditLogRepositoryPort {
     findByProduct: vi.fn(async () => []),
     exists: vi.fn(async () => false),
     findAll: vi.fn(async () => []),
+    findPaged: vi.fn(async () => ({ content: [], totalElements: 0, totalPages: 1, page: 0, size: 20 })),
   };
 }
 

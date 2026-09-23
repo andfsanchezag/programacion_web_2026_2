@@ -89,6 +89,16 @@ describe('AuthorizationService full branch coverage', () => {
     expect(authz.canExecute(makeUser(SystemRole.NATURAL_CUSTOMER, transfer.sourceAccount.owner), transfer)).toBe(true);
   });
 
+  it('allows supervisors and analysts to operate supervised transfers (SDD 7.x)', async () => {
+    const supervisor = makeUser(SystemRole.BUSINESS_SUPERVISOR);
+    const analyst = makeUser(SystemRole.INTERNAL_ANALYST);
+    const stranger = makeUser(SystemRole.NATURAL_CUSTOMER);
+    const transfer = transferProduct();
+    expect(authz.canExecute(supervisor, transfer)).toBe(true);
+    expect(authz.canExecute(analyst, transfer)).toBe(true);
+    expect(authz.canExecute(stranger, transfer)).toBe(false);
+  });
+
   it('restricts approval authority by product and role', async () => {
     const analyst = makeUser(SystemRole.INTERNAL_ANALYST);
     const supervisor = makeUser(SystemRole.BUSINESS_SUPERVISOR);
@@ -105,5 +115,15 @@ describe('AuthorizationService full branch coverage', () => {
 
     expect(authz.canApprove(analyst, account)).toBe(false);
     expect(authz.canApproveApproval(natural)).toBe(false);
+  });
+
+  it('allows commercial employees to request loans on behalf of customers (SDD 9.1)', async () => {
+    const commercial = makeUser(SystemRole.COMMERCIAL_EMPLOYEE);
+    expect(authz.canExecute(commercial, loanProduct())).toBe(true);
+  });
+
+  it('allows the business customer to approve company transfers (SDD 5.3/5.4)', async () => {
+    const business = makeUser(SystemRole.BUSINESS_CUSTOMER);
+    expect(authz.canApprove(business, transferProduct())).toBe(true);
   });
 });

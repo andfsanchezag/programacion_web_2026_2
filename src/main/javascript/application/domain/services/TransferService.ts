@@ -17,6 +17,7 @@ import {
 } from '../exceptions/transfer-errors';
 import { UnauthorizedApprovalException } from '../exceptions/authorization-errors';
 import { UnauthorizedCustomerOperationException } from '../exceptions/customer-errors';
+import { InsufficientBalanceException } from '../exceptions/bank-account-errors';
 
 /**
  * TransferService - Coordinates the transfer lifecycle business operations.
@@ -41,6 +42,12 @@ export class TransferService {
     }
     if (transfer.amount >= this.configuration.getTransferApprovalThreshold()) {
       transfer.submitForApproval();
+    } else {
+      // SDD §6.6: bajo el umbral la creación asigna APPROVED (vía las
+      // transiciones válidas PENDING -> WAITING_FOR_APPROVAL -> APPROVED,
+      // con approvalDate/approvedBy según §9.6). Nunca se persiste PENDING.
+      transfer.submitForApproval();
+      transfer.approve(requestingUser, new Date());
     }
     const saved = await this.transferRepository.save(transfer);
     await this.recordOperation(requestingUser, saved, OperationType.TRANSFER_CREATION);
@@ -99,12 +106,33 @@ export class TransferService {
     }
     await this.assertExists(transfer);
     this.assertCanExecute(transfer);
-    transfer.sourceAccount.transferOut(transfer.amount);
-    transfer.destinationAccount.transferIn(transfer.amount);
+    // Sin transacción distribuida entre puertos: estrategia de compensación.
+    // Si un paso de persistencia falla, se revierte el dinero ya persistido para
+    // impedir que la operación quede aplicada parcialmente (SDD §6.1).
+    const amount = transfer.amount;
+    transfer.sourceAccount.transferOut(amount);
+    transfer.destinationAccount.transferIn(amount);
     await this.bankAccountRepository.update(transfer.sourceAccount);
-    await this.bankAccountRepository.update(transfer.destinationAccount);
+    try {
+      await this.bankAccountRepository.update(transfer.destinationAccount);
+    } catch (error) {
+      // El update de destino nunca persistió: se revierte en memoria y se
+      // restaura el débito de origen ya persistido.
+      transfer.destinationAccount.transferOut(amount);
+      transfer.sourceAccount.transferIn(amount);
+      await this.bankAccountRepository.update(transfer.sourceAccount);
+      throw error;
+    }
     transfer.markExecuted();
-    await this.transferRepository.update(transfer);
+    try {
+      await this.transferRepository.update(transfer);
+    } catch (error) {
+      transfer.destinationAccount.transferOut(amount);
+      transfer.sourceAccount.transferIn(amount);
+      await this.bankAccountRepository.update(transfer.destinationAccount);
+      await this.bankAccountRepository.update(transfer.sourceAccount);
+      throw error;
+    }
     await this.recordOperation(requestingUser, transfer, OperationType.TRANSFER_EXECUTION);
     return transfer;
   }
@@ -125,6 +153,12 @@ export class TransferService {
   private validateTransfer(transfer: Transfer): void {
     if (transfer.amount <= 0) {
       throw new InvalidTransferAmountException('Transfer amount must be positive');
+    }
+    // SDD §6.4/§6.5: la creación siempre valida saldo suficiente en origen.
+    if (transfer.sourceAccount.currentBalance < transfer.amount) {
+      throw new InsufficientBalanceException(
+        'Insufficient source balance for transfer'
+      );
     }
   }
 

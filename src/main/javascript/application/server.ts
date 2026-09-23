@@ -15,20 +15,18 @@ import { UserStatus } from './domain/valueobjects/UserStatus';
 import { AccountType } from './domain/valueobjects/AccountType';
 import { AccountStatus } from './domain/valueobjects/AccountStatus';
 import { Currency } from './domain/valueobjects/Currency';
+import { TransferStatus } from './domain/valueobjects/TransferStatus';
 import { LoanType } from './domain/valueobjects/LoanType';
 import { AuthRestMapper, BankAccountRestMapper, LoanRestMapper, TransferRestMapper, OperationRestMapper } from './adapters/rest/mappers/rest.mappers';
+import { requestIdMiddleware, globalErrorHandler } from './adapters/rest/middleware/errorHandler';
 
 const genId = (p: string): string => `${p}-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
 
-function toStatus(e: unknown): number {
-  const s = (e as { status?: unknown }).status;
-  if (typeof s === 'number') return s;
-  const n = (e as Error)?.name ?? '';
-  if (/NotFound/.test(n)) return 404;
-  if (/AlreadyExists/.test(n)) return 409;
-  if (/Unauthorized|Forbidden/.test(n)) return 403;
-  if (/InvalidCredentials/.test(n)) return 401;
-  return 400;
+/** Envoltorio `{status, body}` de los controladores REST (códigos HTTP del contrato). */
+function isEnvelope(out: unknown): out is { status: number; body: unknown } {
+  return typeof out === 'object' && out !== null
+    && typeof (out as { status?: unknown }).status === 'number'
+    && 'body' in out;
 }
 
 /** Referencia NaturalCustomer válida para búsquedas por modelo (los servicios re-resuelven el estado autoritativo en DB). */
@@ -64,6 +62,7 @@ async function main(): Promise<void> {
 
   const server = express();
   server.use(express.json());
+  server.use(requestIdMiddleware);
   server.use((req: Request, _res: Response, next: NextFunction) => {
     console.log(`${req.method} ${req.path}`);
     next();
@@ -78,7 +77,7 @@ async function main(): Promise<void> {
       (req as unknown as { user: User }).user = stored ?? jwtUser;
       next();
     } catch (e) {
-      res.status(401).json({ message: (e as Error).message });
+      next(e);
     }
   };
   const requireRole = (...roles: SystemRole[]) => (req: Request, res: Response, next: NextFunction): void => {
@@ -86,15 +85,26 @@ async function main(): Promise<void> {
       app.middleware.authorize(authed(req), ...roles);
       next();
     } catch (e) {
-      res.status(403).json({ message: (e as Error).message });
+      next(e);
     }
   };
-  const run = (fn: (req: Request, res: Response) => unknown) => async (req: Request, res: Response): Promise<void> => {
+  const run = (fn: (req: Request, res: Response) => unknown) => async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const out = await fn(req, res);
-      if (!res.headersSent) res.json(out);
+      if (res.headersSent) return;
+      // Los controladores devuelven `{status, body}` (§5.6 contrato REST);
+      // el resto de valores se serializan con 200 OK.
+      if (isEnvelope(out)) {
+        if (out.status === 204 || out.body === undefined) {
+          res.status(out.status).send();
+          return;
+        }
+        res.status(out.status).json(out.body);
+        return;
+      }
+      res.json(out);
     } catch (e) {
-      if (!res.headersSent) res.status(toStatus(e)).json({ message: (e as Error).message });
+      next(e);
     }
   };
   const resolveAccount = (user: User, n: string): Promise<BankAccount> =>
@@ -109,48 +119,48 @@ async function main(): Promise<void> {
   });
 
   // ---------- Público ----------
-  server.post('/api/v1/auth/login', run(async (req) => (await app.controllers.auth.login(req.body)).body));
+  server.post('/api/v1/auth/login', run(async (req) => (await app.controllers.auth.login(req.body))));
   server.post('/api/v1/auth/logout', requireAuth, run(async (req) => {
     await app.useCases.publicAccess.logout(authed(req));
-    return {};
+    return { status: 204 as const, body: undefined };
   }));
   server.post('/api/v1/auth/register/natural-customer', run(async (req) =>
-    (await app.controllers.auth.registerNatural(req.body)).body));
+    app.controllers.auth.registerNatural(req.body)));
   server.post('/api/v1/auth/register/business-customer', run(async (req) => {
     const rep = await app.repositories.customers.findByIdentification(lookupCustomer(req.body.legalRepresentativeIdentification));
     if (!(rep instanceof NaturalCustomer)) throw Object.assign(new Error('Legal representative not found'), { status: 404 });
-    return (await app.controllers.auth.registerBusiness(req.body, rep)).body;
+    return (await app.controllers.auth.registerBusiness(req.body, rep));
   }));
   server.post('/api/v1/auth/register/user', run(async (req) => {
     const customer = await app.repositories.customers.findByIdentification(lookupCustomer(req.body.customerIdentification));
     if (!customer) throw Object.assign(new Error('Customer not found'), { status: 404 });
-    return (await app.controllers.auth.registerUser(req.body, customer)).body;
+    return (await app.controllers.auth.registerUser(req.body, customer));
   }));
 
   // ---------- Natural customer ----------
   const natural = requireRole(SystemRole.NATURAL_CUSTOMER);
   server.get('/api/v1/natural-customer/profile', requireAuth, natural, run(async (req) =>
-    (await app.controllers.natural.getProfile(authed(req))).body));
+    (await app.controllers.natural.getProfile(authed(req)))));
   server.put('/api/v1/natural-customer/profile', requireAuth, natural, run(async (req) => {
     const user = authed(req);
     const current = await app.useCases.natural.consultMyProfile(user);
     const dto = req.body as { email?: string; phoneNumber?: string; address?: string };
     current.updateContactInformation(dto.email ?? current.email, dto.phoneNumber ?? current.phone, dto.address ?? current.address);
-    return (await app.controllers.natural.updateProfile(user, current, dto)).body;
+    return (await app.controllers.natural.updateProfile(user, current, dto));
   }));
   server.get('/api/v1/natural-customer/accounts', requireAuth, natural, run(async (req) =>
-    (await app.controllers.natural.getAccounts(authed(req))).body));
+    (await app.controllers.natural.getAccounts(authed(req)))));
   server.get('/api/v1/natural-customer/accounts/:n/balance', requireAuth, natural, run(async (req) => {
     const user = authed(req);
     const account = await resolveAccount(user, req.params.n);
-    return (await app.controllers.natural.getBalance(user, account)).body;
+    return (await app.controllers.natural.getBalance(user, account));
   }));
   server.post('/api/v1/natural-customer/loans', requireAuth, natural, run(async (req) => {
     const user = authed(req);
     if (!user.customer) throw Object.assign(new Error('User without customer'), { status: 403 });
     const dest = await resolveAccount(user, req.body.destinationAccountNumber);
     const loan = LoanRestMapper.requestToDomain(req.body, user.customer, dest, genId('LOAN'));
-    return (await app.controllers.natural.requestLoan(user, user.customer, loan)).body;
+    return (await app.controllers.natural.requestLoan(user, user.customer, loan));
   }));
   server.get('/api/v1/natural-customer/loans/:id', requireAuth, natural, run(async (req) => {
     const user = authed(req);
@@ -166,13 +176,20 @@ async function main(): Promise<void> {
     const user = authed(req);
     const src = await resolveAccount(user, req.body.sourceAccountNumber);
     const dst = await resolveAccount(user, req.body.destinationAccountNumber);
-    const transfer = TransferRestMapper.createToDomain(req.body, src, dst, user, genId('TRF'));
-    return (await app.controllers.natural.createTransfer(user, transfer)).body;
+    const created = await app.useCases.natural.createTransfer(user, TransferRestMapper.createToDomain(req.body, src, dst, user, genId('TRF')));
+    // Contrato §4.8 Create & Execute: bajo el umbral se ejecuta de inmediato
+    // (201 EXECUTED); con aprobación requerida conserva WAITING_FOR_APPROVAL y
+    // la transición posterior la exponen los flujos de aprobación (§7).
+    if (created.transferStatus.code === TransferStatus.WAITING_FOR_APPROVAL.code) {
+      return { status: 201 as const, body: TransferRestMapper.toResponse(created) };
+    }
+    const executed = await app.useCases.natural.executeTransfer(user, created);
+    return { status: 201 as const, body: TransferRestMapper.toResponse(executed) };
   }));
   server.get('/api/v1/natural-customer/operations', requireAuth, natural, run(async (req) => {
     const user = authed(req);
     const product = await resolveAccount(user, String(req.query.accountNumber ?? ''));
-    return (await app.controllers.natural.getOperations(user, product)).body;
+    return (await app.controllers.natural.getOperations(user, product));
   }));
 
   // ---------- Business customer ----------
@@ -184,15 +201,15 @@ async function main(): Promise<void> {
     const domain = new User(genId('usr'), req.body.identification, req.body.name, req.body.email,
       '', '', SystemRole.fromCode(req.body.role), req.body.username, req.body.password,
       UserStatus.ACTIVE, user.customer);
-    return (await app.controllers.businessCustomer.registerCompanyUser(user, domain)).body;
+    return (await app.controllers.businessCustomer.registerCompanyUser(user, domain));
   }));
   server.patch('/api/v1/business-customer/transfers/:id/approve', requireAuth, biz, run(async (req) => {
     const user = authed(req);
-    return (await app.controllers.businessCustomer.approveTransfer(user, await resolveTransfer(user, req.params.id))).body;
+    return (await app.controllers.businessCustomer.approveTransfer(user, await resolveTransfer(user, req.params.id)));
   }));
   server.patch('/api/v1/business-customer/transfers/:id/reject', requireAuth, biz, run(async (req) => {
     const user = authed(req);
-    return (await app.controllers.businessCustomer.rejectTransfer(user, await resolveTransfer(user, req.params.id))).body;
+    return (await app.controllers.businessCustomer.rejectTransfer(user, await resolveTransfer(user, req.params.id)));
   }));
 
   // ---------- Business operator ----------
@@ -203,7 +220,7 @@ async function main(): Promise<void> {
     const user = authed(req);
     const src = await resolveAccount(user, req.body.sourceAccountNumber);
     const dst = await resolveAccount(user, req.body.destinationAccountNumber);
-    return (await app.controllers.businessOperator.createTransfer(user, TransferRestMapper.createToDomain(req.body, src, dst, user, genId('TRF')))).body;
+    return (await app.controllers.businessOperator.createTransfer(user, TransferRestMapper.createToDomain(req.body, src, dst, user, genId('TRF'))));
   }));
 
   // ---------- Business supervisor ----------
@@ -212,7 +229,7 @@ async function main(): Promise<void> {
     (await app.useCases.businessSupervisor.consultPendingTransfers(authed(req))).map(TransferRestMapper.toResponse)));
   server.patch('/api/v1/business-supervisor/transfers/:id/approve', requireAuth, sup, run(async (req) => {
     const user = authed(req);
-    return (await app.controllers.businessSupervisor.approve(user, await resolveTransfer(user, req.params.id))).body;
+    return (await app.controllers.businessSupervisor.approve(user, await resolveTransfer(user, req.params.id)));
   }));
   server.patch('/api/v1/business-supervisor/transfers/:id/reject', requireAuth, sup, run(async (req) => {
     const user = authed(req);
@@ -236,15 +253,15 @@ async function main(): Promise<void> {
     BankAccountRestMapper.toResponse(await app.useCases.teller.consultBankAccount(authed(req), refAccount(req.params.n, ownerOf(authed(req)))))));
   server.post('/api/v1/teller/accounts/:n/deposits', requireAuth, teller, run(async (req) => {
     const user = authed(req);
-    return (await app.controllers.teller.deposit(user, await resolveAccount(user, req.params.n), req.body)).body;
+    return (await app.controllers.teller.deposit(user, await resolveAccount(user, req.params.n), req.body));
   }));
   server.post('/api/v1/teller/accounts/:n/withdrawals', requireAuth, teller, run(async (req) => {
     const user = authed(req);
-    return (await app.controllers.teller.withdraw(user, await resolveAccount(user, req.params.n), req.body)).body;
+    return (await app.controllers.teller.withdraw(user, await resolveAccount(user, req.params.n), req.body));
   }));
   server.patch('/api/v1/teller/accounts/:n/block', requireAuth, teller, run(async (req) => {
     const user = authed(req);
-    return (await app.controllers.teller.block(user, await resolveAccount(user, req.params.n))).body;
+    return (await app.controllers.teller.block(user, await resolveAccount(user, req.params.n)));
   }));
   server.patch('/api/v1/teller/accounts/:n/unblock', requireAuth, teller, run(async (req) => {
     const user = authed(req);
@@ -262,7 +279,7 @@ async function main(): Promise<void> {
     const customer = await app.repositories.customers.findByIdentification(lookupCustomer(req.body.customerIdentification));
     if (!customer) throw Object.assign(new Error('Customer not found'), { status: 404 });
     const dest = await resolveAccount(user, req.body.destinationAccountNumber);
-    return (await app.controllers.commercial.requestLoan(user, customer, LoanRestMapper.requestToDomain(req.body, customer, dest, genId('LOAN')))).body;
+    return (await app.controllers.commercial.requestLoan(user, customer, LoanRestMapper.requestToDomain(req.body, customer, dest, genId('LOAN'))));
   }));
 
   // ---------- Internal analyst ----------
@@ -271,7 +288,8 @@ async function main(): Promise<void> {
     const domain = new User(genId('usr'), req.body.identification, req.body.name, req.body.email,
       '', '', SystemRole.fromCode(req.body.role), req.body.username, req.body.password,
       UserStatus.ACTIVE, null);
-    return AuthRestMapper.toUserResponse(await app.useCases.analyst.registerEmployeeUser(authed(req), domain));
+    return { status: 201 as const,
+      body: AuthRestMapper.toUserResponse(await app.useCases.analyst.registerEmployeeUser(authed(req), domain)) };
   }));
   server.patch('/api/v1/internal-analyst/customers/:id/status', requireAuth, analyst, run(async (req) => {
     const user = authed(req);
@@ -282,7 +300,7 @@ async function main(): Promise<void> {
     else if (target === CustomerStatus.ACTIVE.code) customer.activate();
     else if (target === CustomerStatus.INACTIVE.code) customer.deactivate();
     else throw Object.assign(new Error(`Unsupported status ${target}`), { status: 400 });
-    return (await app.controllers.analyst.changeCustomerStatus(user, customer, req.body)).body;
+    return (await app.controllers.analyst.changeCustomerStatus(user, customer, req.body));
   }));
   server.patch('/api/v1/internal-analyst/loans/:id/approve', requireAuth, analyst, run(async (req) => {
     const user = authed(req);
@@ -291,7 +309,7 @@ async function main(): Promise<void> {
       current.requestedAmount, req.body.interestRate ?? current.interestRate,
       current.termInMonths, current.destinationAccount, req.body.approvedAmount ?? current.requestedAmount,
       current.loanStatus, null, null);
-    return (await app.controllers.analyst.approveLoan(user, input, req.body)).body;
+    return (await app.controllers.analyst.approveLoan(user, input, req.body));
   }));
   server.patch('/api/v1/internal-analyst/loans/:id/reject', requireAuth, analyst, run(async (req) => {
     const user = authed(req);
@@ -299,22 +317,51 @@ async function main(): Promise<void> {
   }));
   server.post('/api/v1/internal-analyst/loans/:id/disburse', requireAuth, analyst, run(async (req) => {
     const user = authed(req);
-    return (await app.controllers.analyst.disburseLoan(user, await resolveLoan(user, req.params.id))).body;
+    return (await app.controllers.analyst.disburseLoan(user, await resolveLoan(user, req.params.id)));
   }));
   server.get('/api/v1/internal-analyst/audit-logs', requireAuth, analyst, run(async (req) => {
     const user = authed(req);
-    const q = req.query as { accountNumber?: string; operationType?: string };
-    const logs = q.accountNumber
-      ? await app.useCases.analyst.consultAuditLog(user, await resolveAccount(user, q.accountNumber))
-      : await app.repositories.audits.findAll();
-    const content = logs
-      .filter((l) => !q.operationType || l.operationType.code === q.operationType)
-      .map(OperationRestMapper.auditToResponse);
-    return { content, totalElements: content.length, totalPages: 1 };
+    // Contrato §10.5: filtros userId/operationType/cuenta + paginación page/size.
+    const q = req.query as { accountNumber?: string; operationType?: string; userId?: string; page?: string; size?: string };
+    const size = Math.max(1, Number(q.size ?? 20) || 20);
+    const page = Math.max(0, Number(q.page ?? 0) || 0);
+    if (q.accountNumber) {
+      // Por cuenta se consulta vía caso de uso (autorización de dominio).
+      const logs = await app.useCases.analyst.consultAuditLog(user, await resolveAccount(user, q.accountNumber));
+      const filtered = logs.filter((l) =>
+        (!q.operationType || l.operationType.code === q.operationType) &&
+        (!q.userId || l.performedBy.userId === q.userId || l.performedBy.username === q.userId));
+      const totalElements = filtered.length;
+      const content = filtered
+        .slice(page * size, page * size + size)
+        .map(OperationRestMapper.auditToResponse);
+      return { status: 200 as const, body: {
+        content, totalElements, totalPages: Math.max(1, Math.ceil(totalElements / size)),
+      } };
+    }
+    // Listado general con filtros y paginación resueltos en MongoDB.
+    const paged = await app.repositories.audits.findPaged(
+      { operationType: q.operationType, performedBy: q.userId }, page, size);
+    return { status: 200 as const, body: {
+      content: paged.content.map(OperationRestMapper.auditToResponse),
+      totalElements: paged.totalElements,
+      totalPages: paged.totalPages,
+    } };
   }));
-  server.delete('/api/v1/internal-analyst/loans/:id', requireAuth, analyst, (_req: Request, res: Response) => {
+  server.delete('/api/v1/internal-analyst/loans/:id', requireAuth, analyst, run(async (req, res) => {
+    const user = authed(req);
+    // Contrato §10.6: consultar el recurso (404 si no existe) y ejecutar el
+    // cierre de dominio (autorización, transición a CLOSED, Operation + AuditLog).
+    await app.useCases.analyst.closeLoan(user, await resolveLoan(user, req.params.id));
     res.status(204).send();
+  }));
+
+  // Handler global de errores (contrato SDD/Adapters/Global-exception-handler.md).
+  // Rutas no registradas: 404 con la forma uniforme de error.
+  server.use((req: Request, _res: Response, next: NextFunction) => {
+    next(Object.assign(new Error(`Route not found: ${req.method} ${req.path}`), { status: 404 }));
   });
+  server.use(globalErrorHandler);
 
   const port = appConfig.port;
   const http = server.listen(port, () => {

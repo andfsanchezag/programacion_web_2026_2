@@ -238,6 +238,50 @@ Potential areas for extension:
 - **Notifications**: Email/SMS notifications
 - **Fraud Detection**: ML-based anomaly detection
 
+## Ejecución con Docker
+
+Prerrequisitos: Docker Engine + Docker Compose v2.
+
+Puertos: API `8080`, MySQL host `3308` (contenedor `3306`; el `3306` del host está
+reservado por un mysqld nativo), MongoDB `27017`. Dentro de la red Docker la app usa
+`mysql-db:3306` y `mongo-db:27017` (nunca `localhost`).
+
+```bash
+# Construir la imagen de la aplicación desde cero
+docker compose build --no-cache
+
+# Levantar todo (API + MySQL + MongoDB)
+docker compose up -d
+
+# Estado y salud
+docker compose ps
+curl http://localhost:8080/health
+
+# Logs
+docker compose logs -f bank-api
+
+# Apagado (conserva los volúmenes con datos)
+docker compose down
+```
+
+Variables: el servicio `bank-api` toma valores de desarrollo desde `environment` en
+`docker-compose.yml` (ver `src/main/javascript/.env.example` para ejecución local con
+`npm run start`). No hay secretos reales en el repositorio.
+
+Pruebas fuera del contenedor: `cd src/main/javascript && npm test`.
+Pruebas E2E automatizadas (requieren `docker compose up -d`):
+`cd src/main/javascript && npm run test:e2e`.
+
+Poblamiento de datos (recorre todos los endpoints validando respuestas):
+`cd src/main/javascript && npm run seed` (requiere `docker compose up -d`).
+Crea empleados base, clientes, cuentas, préstamos, transferencias y auditoría.
+Pruebas dentro del contenedor: `docker compose exec bank-api npm test`
+(requiere dependencias de desarrollo en la imagen; la imagen de producción solo trae
+dependencias de runtime).
+
+Limpiar volúmenes solo cuando sea intencional (borra los datos):
+`docker compose down -v`.
+
 ## Credits
 
 Created by andfsanchezag as part of an educational endeavor to demonstrate:

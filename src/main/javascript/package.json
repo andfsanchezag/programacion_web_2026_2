@@ -7,8 +7,10 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts",
     "coverage": "vitest run --coverage",
     "start": "tsx application/server.ts",
+    "seed": "tsx scripts/seed-data.ts",
     "dev": "tsx watch application/server.ts"
   },
   "devDependencies": {

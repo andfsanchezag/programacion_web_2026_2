@@ -168,9 +168,17 @@ export class LoanService {
     const destination = loan.destinationAccount;
     destination.deposit(loan.approvedAmount);
     loan.disburse(new Date());
-    // 6-7. Persist BankAccount and Loan.
+    // 6-7. Persist BankAccount and Loan. Sin transacción distribuida entre
+    //    puertos: si el segundo update falla, se compensa el crédito ya
+    //    persistido en la cuenta destino (SDD §6.1).
     await this.bankAccountRepository.update(destination);
-    await this.loanRepository.update(loan);
+    try {
+      await this.loanRepository.update(loan);
+    } catch (error) {
+      destination.withdraw(loan.approvedAmount);
+      await this.bankAccountRepository.update(destination);
+      throw error;
+    }
     // 8-9. Register Operation and AuditLog.
     await this.recordOperation(requestingUser, loan, OperationType.LOAN_DISBURSEMENT);
     // 10. Return the Loan.

@@ -86,6 +86,17 @@ describe('LoanService', () => {
     expect(accounts.update).toHaveBeenCalledWith(destination);
   });
 
+  it('rolls back the credited account when the loan update fails on disburse', async () => {
+    const { service, accounts, loans } = buildLoan();
+    const loan = buildLoanModel(LoanStatus.UNDER_REVIEW);
+    loan.approve(1000, new Date());
+    const destination = loan.destinationAccount;
+    (loans.update as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('db down'));
+    await expect(service.disburseLoan(makeUser(SystemRole.INTERNAL_ANALYST), loan)).rejects.toThrow('db down');
+    expect(destination.currentBalance).toBe(0);
+    expect(accounts.update).toHaveBeenCalledTimes(2);
+  });
+
   it('registers payments on disbursed loans', async () => {
     const { service } = buildLoan();
     const loan = buildLoanModel(LoanStatus.DISBURSED);

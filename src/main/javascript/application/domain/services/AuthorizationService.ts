@@ -46,12 +46,17 @@ export class AuthorizationService {
       return false;
     }
     if (product instanceof Loan) {
-      // Operador/empresario, dueño, o analista interno (rol autorizado del
-      // ciclo de vida del préstamo: desembolso/cierre según Input-ports).
-      return this.isAuthorizeOperatorOrOwner(actor, product) || actor.role.canApproveLoans();
+      // Operador/empresario, dueño, analista interno o empleado comercial
+      // (solicitud por cuenta del cliente según SDD §9.1).
+      return this.isAuthorizeOperatorOrOwner(actor, product) || actor.role.canApproveLoans() ||
+        actor.role.equals(SystemRole.COMMERCIAL_EMPLOYEE);
     }
     if (product instanceof Transfer) {
-      return this.isAuthorizeOperatorOrOwner(actor, product);
+      // Operador, dueño del origen, o supervisor/analista (supervisión y
+      // aprobación de transferencias según SDD §7 y puertos de entrada).
+      return this.isAuthorizeOperatorOrOwner(actor, product) ||
+        actor.role.equals(SystemRole.BUSINESS_SUPERVISOR) ||
+        actor.role.equals(SystemRole.INTERNAL_ANALYST);
     }
     return this.isEmployee(actor) || this.isActorOwner(actor, product);
   }

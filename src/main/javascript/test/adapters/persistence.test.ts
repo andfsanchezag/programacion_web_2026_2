@@ -70,4 +70,44 @@ describe('Persistence: mappers + adapters reales (Fase 2A/2B)', () => {
     const op = new Operation('op-1', OperationType.DEPOSIT, new Date(), user, product);
     expect(op.operationType.code).toBe('DEPOSIT');
   });
+
+  it('AuditLogMongoAdapter.findPaged resuelve filtros y paginación en Mongo', async () => {
+    const user = makeUser();
+    const owner = makeNaturalCustomer();
+    const product = makeBankAccount(owner);
+    const doc = AuditLogMongoMapper.toDocument(
+      new AuditLog('audit-p', OperationType.DEPOSIT, new Date(), user, product, new Map([['amount', 1]]))
+    );
+    let capturedQuery: Record<string, unknown> = {};
+    let capturedSkip = -1;
+    let capturedLimit = -1;
+    const model = {
+      find: vi.fn((query: Record<string, unknown>) => {
+        capturedQuery = query;
+        return { skip: (n: number) => ({ limit: (m: number) => ({
+          lean: async () => { capturedSkip = n; capturedLimit = m; return [doc]; },
+        }) }) };
+      }),
+      countDocuments: vi.fn(async () => 5),
+    };
+    const users = { findByUsername: vi.fn(async () => user) };
+    const accounts = { find: vi.fn(async () => product) };
+    const loans = { find: vi.fn(async () => null) };
+    const transfers = { find: vi.fn(async () => null) };
+    const adapter = new AuditLogMongoAdapter(model as never, users as never, accounts as never, loans as never, transfers as never);
+    // performedBy llega como userId y se resuelve a username para el query.
+    const page = await adapter.findPaged(
+      { operationType: 'DEPOSIT', performedBy: user.userId }, 2, 2);
+    expect(model.find).toHaveBeenCalled();
+    expect(capturedQuery).toMatchObject({ operationType: 'DEPOSIT', performedByUsername: user.username });
+    expect(capturedSkip).toBe(4);
+    expect(capturedLimit).toBe(2);
+    expect(model.countDocuments).toHaveBeenCalledWith(capturedQuery);
+    expect(page.totalElements).toBe(5);
+    expect(page.totalPages).toBe(3);
+    expect(page.page).toBe(2);
+    expect(page.size).toBe(2);
+    expect(page.content).toHaveLength(1);
+    expect(page.content[0].auditId).toBe('audit-p');
+  });
 });

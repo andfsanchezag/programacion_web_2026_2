@@ -93,6 +93,27 @@ describe('UseCases por rol + REST (Fases 3B/4/5)', () => {
     expect(res.body.availableBalance).toBe(2000);
   });
 
+  it('BusinessCustomer: registra usuario delegado de la empresa sin analista (SDD 5.2)', async () => {
+    const app = buildApp();
+    const { makeBusinessCustomer } = await import('../helpers');
+    const company = makeBusinessCustomer();
+    await app.repositories.customers.save(company);
+    const actor = new User('u-biz', company.identification, company.name, company.email,
+      company.phone, company.address, SystemRole.BUSINESS_CUSTOMER, 'bizadmin',
+      'StrongPassword123!', UserStatus.ACTIVE, company);
+    await app.repositories.users.save(actor);
+    const delegated = new User('u-op', 'op-id-1', 'Op Uno', 'op@corp.com',
+      '', '', SystemRole.BUSINESS_OPERATOR, 'operativo1',
+      'StrongPassword123!', UserStatus.ACTIVE, company);
+    const created = await app.useCases.businessCustomer.registerCompanyUser(actor, delegated);
+    expect(created.username).toBe('operativo1');
+    expect(created.passwordHash).not.toBe('StrongPassword123!');
+    await expect(app.useCases.businessCustomer.registerCompanyUser(
+      actor, new User('u-x', 'x-id', 'X', 'x@corp.com', '', '', SystemRole.BUSINESS_OPERATOR,
+        'externo1', 'StrongPassword123!', UserStatus.ACTIVE, makeNaturalCustomer()),
+    )).rejects.toThrow('belong to the company');
+  });
+
   it('AuthController.login emite JWT válido con claims userId/username/role/email', async () => {
     const app = buildApp();
     const customer = makeNaturalCustomer();
