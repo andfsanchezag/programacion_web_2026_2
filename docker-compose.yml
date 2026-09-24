@@ -1,7 +1,6 @@
-# Decisión documentada (§0B.3): el host publica MySQL en 3308 porque el puerto 3306
-# está ocupado por un mysqld nativo. El canónico SDD sigue siendo 3306:3306
-# (.env.example). Dentro de la red Docker la app usa el nombre de servicio
-# (mysql-db:3306), nunca localhost.
+# En local se publica MySQL en el puerto 3306 para mantener la convención
+# del proyecto y simplificar la conexión de desarrollo. Dentro de la red Docker
+# la app usa el nombre del servicio (mysql-db:3306), nunca localhost.
 
 services:
   mysql-db:
@@ -12,7 +11,7 @@ services:
       MYSQL_DATABASE: bank_db
       MYSQL_ROOT_PASSWORD: root_password
     ports:
-      - "3308:3306"
+      - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     networks:

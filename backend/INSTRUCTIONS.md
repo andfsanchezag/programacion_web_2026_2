@@ -24,7 +24,7 @@ docker compose ps
 Expected services:
 
 - `bank-api`: `http://localhost:8080`
-- MySQL: host port `3308`, container port `3306`
+- MySQL: host port `3306`, container port `3306`
 - MongoDB: `localhost:27017`
 
 The application connects internally to `mysql-db:3306` and `mongo-db:27017`.

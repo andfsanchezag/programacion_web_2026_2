@@ -31,7 +31,7 @@ Expected services:
 
 - `frontend`: `http://localhost:5173`
 - `bank-api`: `http://localhost:8080`
-- `mysql-db`: host `3308`, container `3306`
+- `mysql-db`: host `3306`, container `3306`
 - `mongo-db`: `localhost:27017`
 
 The frontend browser calls the backend through `http://localhost:8080`. Internal backend database connections use Compose service names, never `localhost`.

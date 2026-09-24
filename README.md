@@ -227,7 +227,7 @@ Expected services:
 |---|---|---|
 | `frontend` | React application served by Nginx | `localhost:5173` |
 | `bank-api` | Express REST API | `localhost:8080` |
-| `mysql-db` | Relational persistence | host `3308`, container `3306` |
+| `mysql-db` | Relational persistence | host `3306`, container `3306` |
 | `mongo-db` | Audit persistence | `localhost:27017` |
 
 Inspect logs:

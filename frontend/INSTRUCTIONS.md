@@ -148,7 +148,7 @@ Expected URLs:
 
 - Frontend: `http://localhost:5173`
 - Backend: `http://localhost:8080`
-- MySQL: host `3308`, container `3306`
+- MySQL: host `3306`, container `3306`
 - MongoDB: `27017`
 
 Stop the complete stack without deleting data:

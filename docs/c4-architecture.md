@@ -115,7 +115,7 @@ The backend is the authoritative application boundary. Express receives HTTP req
 
 MySQL stores data whose consistency and relationships are central to banking operations. TypeORM provides the persistence abstraction and `mysql2` supplies the MySQL driver. The database is reached from the API using the Compose service name `mysql-db` and the internal port `3306`.
 
-The host maps MySQL to port `3308` because the native host port `3306` may already be occupied. This host mapping is a development concern; containers use `mysql-db:3306`.
+The host maps MySQL to port `3306` to keep the local developer experience aligned with the canonical MySQL port used by the project and the runtime environment. Containers still use `mysql-db:3306` internally.
 
 #### Audit database
 
@@ -242,7 +242,7 @@ C4Deployment
         Deployment_Node(network, "bank-net", "Docker bridge network", "Private network for service-to-service communication.") {
             Container(frontend, "aurora-frontend", "Nginx container", "Serves the compiled React/Vite assets on host port 5173.")
             Container(api, "bank-api", "Node.js container", "Runs the compiled TypeScript/Express API on host port 8080.")
-            ContainerDb(mysql, "bank-mysql", "MySQL 8 container", "Operational database; host port 3308 maps to container port 3306.")
+            ContainerDb(mysql, "bank-mysql", "MySQL 8 container", "Operational database; host port 3306 maps to container port 3306.")
             ContainerDb(mongo, "bank-mongo", "MongoDB 6 container", "Audit database; host port 27017 maps to container port 27017.")
         }
     }
