@@ -1,293 +1,309 @@
-# programacion_web_2026_2
+# Aurora Banco
 
-## Overview
+Aurora Banco is a full-stack banking information management system built as a portfolio-grade demonstration of domain-driven design, hexagonal architecture, secure REST integration and Docker-first delivery.
 
-This is a comprehensive Banking Information Management System built using Domain-Driven Design principles with TypeScript and modern JavaScript. The project represents a complete domain model for a banking institution, featuring core domain entities, value objects, services, and comprehensive test coverage.
+The project models real banking workflows for customers, companies and internal employees: accounts, balances, loans, transfers, approvals, authentication, authorization and immutable audit records.
 
-## Project Summary
+> Aurora Banco uses an original visual identity inspired by digital banking patterns. It does not use Bancolombia names, logos, proprietary assets or copied screens.
 
-- **Type**: Banking Domain Model / Domain-Driven Design Application
-- **Language**: TypeScript (ES2020+ with strict mode)
-- **Architecture**: Hexagonal Architecture with Domain Model focus
-- **Testing**: Comprehensive unit testing with Vitest framework
-- **License**: MIT
+## Project Status
 
-## Key Features
+The backend is validated with TypeScript build/tests, Docker, MySQL, MongoDB, JWT, CORS and REST smoke flows. The React frontend includes role-based modules, JWT session handling, backend adapters, SweetAlert2 feedback, responsive layouts and visual evidence. Remaining work is tracked in the frontend orchestrator state, including any backend-blocked subfeatures and final delivery checks.
 
-### Core Domain Entities
-- **Customer**: Abstract base class for banking customers (individuals and organizations)
-- **User**: System identity for authentication and authorization
-- **BankAccount**: Financial products owned by customers
-- **Loan**: Credit products requested by customers
-- **Person**: Abstract base class for all identifiable persons in the system
-- **BankingProduct**: Abstract base class for all financial products and services
+## Highlights
 
-### Value Objects
-- **Currency**: Financial currency with ISO code and precision
-- **AccountStatus**: Lifecycle states for bank accounts
-- **CustomerStatus**: Lifecycle states for customers
-- **AccountType**: Types of bank accounts (checking, savings, etc.)
-- **LoanType**: Types of loan products
-- **LoanStatus**: Lifecycle states for loans
-- **SystemRole**: Security roles and permissions
+- Role-based banking platform with seven operational roles.
+- Domain-driven business model with entities, value objects, domain services and explicit exceptions.
+- Hexagonal architecture with input ports, output ports and technology adapters.
+- MySQL persistence through TypeORM.
+- MongoDB persistence for audit logs through Mongoose.
+- JWT authentication and role authorization.
+- Global REST exception handling with stable error codes and request correlation IDs.
+- Central request validation and deterministic HTTP status mapping.
+- React + TypeScript frontend with dashboards and workflows per role.
+- Docker Compose environment that starts frontend, backend, MySQL and MongoDB together.
+- Unit, integration, live smoke, E2E and screenshot-based validation.
+- Responsive and accessible UI validation at mobile, tablet and desktop viewports.
 
-### Services
-- **CustomerService**: Manages customer lifecycle operations
-- **BankAccountService**: Handles account operations (activate, block, deposit, withdraw, etc.)
-- **LoanService**: Manages loan lifecycle (approve, reject, disburse, etc.)
+## Architecture
 
-### Exception Handling
-Comprehensive domain exceptions for all failure scenarios:
-- Authentication and authorization errors
-- Account operation errors
-- Loan processing errors
-- Customer validation errors
+```text
+                           +----------------------+
+                           | React Frontend       |
+                           | frontend/             |
+                           | adapters + role UX    |
+                           +----------+-----------+
+                                      |
+                         HTTP + JWT + CORS
+                                      |
+                                      v
+                           +----------------------+
+                           | Express Backend      |
+                           | backend/src/         |
+                           | REST + application   |
+                           +----+------------+----+
+                                |            |
+                           TypeORM        Mongoose
+                                |            |
+                                v            v
+                         +-----------+  +-----------+
+                         | MySQL     |  | MongoDB   |
+                         | bank_db   |  | audit_db  |
+                         +-----------+  +-----------+
+```
+
+### Architectural patterns
+
+- Domain-Driven Design: business concepts are represented as domain entities, value objects and services.
+- Hexagonal architecture: domain logic depends on ports, never on databases or HTTP frameworks.
+- Ports and adapters: persistence, REST, security and configuration are replaceable adapters.
+- Dependency inversion: use cases coordinate domain services through contracts.
+- Anti-corruption boundaries: DTOs and persistence documents are mapped before entering the domain.
+- Explicit error taxonomy: validation, authentication, authorization, not-found, conflict, dependency and internal errors use stable categories.
+- Docker-first development: all application execution and validation happens through containers.
 
 ## Technology Stack
 
-### Runtime
-- **Node.js**: JavaScript/TypeScript runtime environment
-- **TypeScript**: ^4.0.0 (strict mode enabled)
-- **Vitest**: ^3.2.7 (testing framework)
+Aurora Banco uses TypeScript end to end, but separates browser delivery, application orchestration, business rules and persistence. The technologies below are deliberately assigned to specific architectural boundaries.
 
-### Development Tools
-- **tsx**: ^4.23.12 (TypeScript runner)
-- **@vitest/coverage-v8**: ^3.2.7 (coverage reporting)
-- **TypeScript compiler**: Built-in for compilation
+### Backend technologies
 
-### Architecture Features
-- **Domain-Driven Design**: Business logic encapsulated in domain entities
-- **Hexagonal Architecture**: Clear ports and adapters
-- **Clean Code**: Comprehensive JSDoc documentation
-- **Test Coverage**: 100% test coverage on business logic
+| Technology | Version in project | Role | Boundary and rationale |
+|---|---:|---|---|
+| TypeScript | `^4.0.0` | Static typing for the API, domain models, ports, DTOs and adapters. | Shared contracts are explicit at compile time. Runtime HTTP data is still validated at the REST boundary. |
+| Node.js | Docker runtime | Executes the backend application and asynchronous I/O. | Infrastructure runtime only; domain services do not depend on Node globals. |
+| Express | `^4.22.2` | HTTP server, routing and middleware pipeline. | REST adapters translate requests into input-port calls; Express does not contain banking rules. |
+| TypeORM | `^1.1.1` | Relational persistence abstraction. | Implements output ports and maps operational data to MySQL without leaking ORM entities into the domain. |
+| `mysql2` | `^3.24.4` | MySQL driver used by the relational adapter. | Infrastructure detail below TypeORM. Controllers and domain services never call it directly. |
+| MySQL | Docker image `8.0` | Transactional operational data. | Stores customers, users, accounts, loans, transfers and related relational state. |
+| Mongoose | `^6.13.11` | Document persistence abstraction for audit data. | Implements the audit output port and maps audit events to MongoDB documents. |
+| MongoDB | Docker image `6.0` | Audit and operational history. | Stores append-oriented audit records independently from transactional banking aggregates. |
+| JWT | API security boundary | Carries authenticated identity and role claims. | The API signs and verifies tokens; authorization is enforced server-side for every protected operation. |
+| `dotenv` | `^17.4.2` | Loads environment-based runtime configuration. | Keeps ports, database connections and policy thresholds outside source code. |
+| Vitest | `^3.2.7` | Backend unit, integration and end-to-end-oriented test execution. | Verifies domain rules, adapters and live behavior according to the selected test configuration. |
+| V8 coverage | `@vitest/coverage-v8` | Coverage reporting for backend tests. | Provides evidence about tested branches without replacing behavioral tests. |
 
-## Project Structure
+#### Backend technology flow
 
-```
-backend/
-├── application/
-│   ├── domain/
-│   │   ├── models/          # Core domain entities
-│   │   │   ├── BankAccount.ts
-│   │   │   ├── Customer.ts
-│   │   │   ├── Loan.ts
-│   │   │   ├── User.ts
-│   │   │   └── Person.ts
-│   │   ├── enums/            # Currency, AccountType, etc.
-│   │   ├── valueobjects/     # Domain primitives
-│   │   ├── exceptions/       # Domain errors
-│   │   └── services/         # Application services
-│   └── infrastructure/      # External concerns (if any)
-├── test/                   # Comprehensive test suite
-│   ├── domain/            # Domain model tests
-│   └── infrastructure/    # Infrastructure tests
-├── package.json           # Project configuration
-├── tsconfig.json          # TypeScript configuration
-└── vitest.config.ts       # Testing configuration
+```text
+HTTP request
+  -> Express middleware and REST controllers
+  -> DTO validation and mappers
+  -> role input port
+  -> use-case implementation
+  -> domain entities, value objects and services
+  -> output port
+  -> TypeORM/MySQL or Mongoose/MongoDB adapter
+  -> response mapper and HTTP response
 ```
 
-## Getting Started
+### Frontend technologies
 
-### Prerequisites
-- Node.js (v16 or higher)
-- TypeScript compiler
+| Technology | Version in project | Role | Boundary and rationale |
+|---|---:|---|---|
+| React | `^19.2.8` | Component rendering and interaction state. | Owns presentation and user interaction, not authoritative banking invariants. |
+| React DOM | `^19.2.8` | Mounts the React application in the browser. | Browser delivery boundary for the component tree. |
+| TypeScript | `~6.0.2` | Types frontend models, ports, services, adapters and component props. | Keeps client contracts explicit while runtime responses remain mapped and checked. |
+| Vite | `^8.3.0` | Development server and production asset build. | Produces static assets that are served by Nginx in the runtime image. |
+| `@vitejs/plugin-react` | `^6.1.1` | React transform integration for Vite. | Connects React source conventions with the Vite build pipeline. |
+| React Router DOM | `^7.18.4` | URL routing, protected navigation and role-based screen selection. | Organizes user flows; it is not a replacement for backend authorization. |
+| SweetAlert2 | `^11.26.25` | Confirmation, success and error feedback. | Centralized alert adapter prevents pages from duplicating feedback behavior. |
+| Testing Library | `@testing-library/react` `^16.3.3` | Component and interaction testing from the user's perspective. | Assertions focus on visible behavior, labels, roles and outcomes. |
+| Jest DOM | `^7.0.1` | DOM-specific assertions for frontend tests. | Makes accessibility and rendered-state assertions readable. |
+| Vitest | `^5.0.1` | Frontend unit, component and live test scripts. | Runs fast local checks and live flows against the Docker API. |
+| Oxlint | `^1.81.0` | Frontend static analysis. | Finds common correctness and maintainability issues before runtime checks. |
+| Playwright Core | `^1.63.0` | Browser automation for screenshot evidence. | Captures responsive visual evidence at mobile, tablet and desktop widths. |
+| Nginx | Docker runtime image | Serves compiled Vite assets. | Keeps the production frontend image focused on static delivery rather than development tooling. |
 
-### Installation
+#### Frontend technology flow
 
-```bash
-# Navigate to the project directory
-cd programacion_web_2026_2
-
-# Install dependencies (if needed)
-npm install
+```text
+Browser interaction
+  -> React route and role module
+  -> application service or view model
+  -> frontend domain port
+  -> HTTP adapter + session adapter
+  -> Express API with Bearer JWT
+  -> mapped response or typed error
+  -> React state update + SweetAlert2 feedback
 ```
 
-### Building
+### Platform and delivery technologies
 
-```bash
-# Build TypeScript code
-npm run build
+| Technology | Role in this project | Operational detail |
+|---|---|---|
+| Docker | Packages backend and frontend with reproducible runtime dependencies. | Backend and frontend commands run inside images; host Node/npm installation is not required. |
+| Docker Compose v2 | Describes the complete local topology. | Starts `frontend`, `bank-api`, `mysql-db` and `mongo-db` on the `bank-net` bridge network. |
+| Docker health checks | Coordinates startup readiness. | API waits for healthy MySQL and MongoDB; frontend waits for the API health endpoint. |
+| MySQL named volume | Persists operational data across container restarts. | Compose volume: `mysql_data`. |
+| MongoDB named volume | Persists audit data across container restarts. | Compose volume: `mongo_data`. |
+| CORS | Allows the browser origin at `localhost:5173` to call the API at `localhost:8080`. | Browser policy only; it does not replace JWT authentication or role authorization. |
+| HTTP/JSON | Transport between frontend and backend. | DTOs, mappers, stable error codes and `X-Request-Id` make the boundary observable. |
 
-# Build output: compiled JavaScript in dist/ directory
+Detailed responsibilities, interactions and decisions are documented in the [C4 architecture document](docs/c4-architecture.md).
+
+## Repository Structure
+
+```text
+.
+├── backend/
+│   ├── src/application/
+│   ├── test/
+│   ├── scripts/
+│   ├── Dockerfile
+│   ├── package.json
+│   └── INSTRUCTIONS.md
+├── frontend/
+│   ├── src/
+│   │   ├── adapters/
+│   │   ├── app/
+│   │   ├── application/
+│   │   ├── components/
+│   │   ├── domain/
+│   │   ├── modules/
+│   │   └── styles/
+│   ├── test/
+│   │   └── screenshots/
+│   ├── Dockerfile
+│   ├── package.json
+│   └── INSTRUCTIONS.md
+├── backendSDD/
+├── frontendSDD/
+├── docker-compose.yml
+├── INSTRUCTIONS.md
+└── LICENSE
 ```
 
-### Testing
+## Backend Capabilities
 
-```bash
-# Run all tests
-npm test
+The backend exposes workflows for:
 
-# Run tests with coverage
-npm run coverage
+- Public login and registration.
+- Natural customer profile, accounts, loans, payments, transfers and operations.
+- Business customer profile, delegated users and transfer approvals.
+- Business operator accounts and high-value transfers.
+- Business supervisor approval queues.
+- Teller customer search, account management, deposits and withdrawals.
+- Commercial employee customer loan requests.
+- Internal analyst employee management, customer status, loan lifecycle and audit logs.
 
-# Run specific test files
-# vitest backend/test/domain/models/BankAccount.test.ts
-```
+Protected endpoints require a JWT. The backend returns a uniform error envelope with a stable error code and `X-Request-Id` correlation value.
 
-### Development
+## Frontend Experience
 
-The project includes comprehensive unit tests for all domain entities:
-- Account operations (activate, block, close, transfer)
-- Loan processing (approve, reject, disburse, close)
-- Customer management
-- Authentication and authorization
-- Currency and financial calculations
+The frontend presents an original banking experience under the Aurora Banco identity:
 
-## Business Logic Examples
+- Login and registration flows with field validation.
+- Role-based protected navigation.
+- Product summary dashboards.
+- Account, loan and transfer workflows.
+- Loading skeletons, empty states and retry actions.
+- SweetAlert2 confirmations for financial and destructive operations.
+- Error feedback for `401`, `403`, `404`, `409`, `503` and `500` responses.
+- Responsive layouts for 360px, 768px and 1440px viewports.
+- Accessibility checks for labels, keyboard navigation, focus order, contrast and reduced motion.
 
-### Bank Account Operations
-```typescript
-// Create a new bank account
-const account = new BankAccount(
-  'ACC-12345',
-  AccountType.CHECKING,
-  customer,
-  Currency.USD,
-  new Date()
-);
+## Running the Complete Stack
 
-// Deposit funds
-account.deposit(1000);
+Docker Compose is the only supported execution path. Start Docker Desktop first.
 
-// Withdraw funds
-account.withdraw(500);
+From the repository root:
 
-// Transfer between accounts
-account.transferOut(200); // From this account
-account.transferIn(200);  // To another account
-```
-
-### Loan Processing
-```typescript
-// Create a loan application
-const loan = new Loan(
-  'LOAN-67890',
-  customer,
-  LoanType.HOUSE_MORTGAGE,
-  50000,
-  5.5,
-  360,
-  destinationAccount
-);
-
-// Approve loan
-loan.approve(50000, new Date());
-
-// Disburse funds
-loan.disburse(new Date());
-```
-
-### Customer Management
-```typescript
-// Create and activate customer
-customer.activate();
-
-// Block customer
-customer.block();
-
-// Validate customer status
-customer.validateRegistration();
-```
-
-## Architecture Principles
-
-### Domain-Driven Design
-- **Entities**: Objects with identity and state (User, Customer, BankAccount, Loan)
-- **Value Objects**: Immutable objects with value semantics (Currency, Status)
-- **Aggregates**: Groups of related objects (Customer with related accounts/loans)
-- **Factories**: Object creation with business rules
-- **Repositories**: Data access abstraction for domain objects
-
-### Clean Architecture
-- **Core**: Domain models and business rules
-- **Service Layer**: Application services coordinating domain operations
-- **Infrastructure**: External concerns (database, external APIs)
-
-### Test Coverage
-100% test coverage on business logic with:
-- Unit tests for individual domain methods
-- Integration tests for business workflows
-- Mocks and stubs for external dependencies
-
-## Business Domain Covered
-
-This system models a complete banking environment with:
-- Customer lifecycle management
-- Multi-currency support
-- Account operations (deposit, withdraw, transfer)
-- Loan processing and management
-- Security and authentication
-- Customer and account status management
-- Financial calculations and validations
-
-## Testing Approach
-
-The project emphasizes test-driven development with:
-- **Unit Tests**: Isolated testing of domain entities
-- **Edge Cases**: Comprehensive boundary condition testing
-- **Error Scenarios**: Validation of exception handling
-- **Business Rules**: Testing all domain invariants
-
-## Future Enhancements
-
-Potential areas for extension:
-- **Database Integration**: PostgreSQL/MySQL for persistence
-- **API Layer**: REST/GraphQL API for external access
-- **Additional Products**: Credit cards, debit cards, investments
-- **Reporting**: Financial reports and analytics
-- **Notifications**: Email/SMS notifications
-- **Fraud Detection**: ML-based anomaly detection
-
-## Ejecución con Docker
-
-Prerrequisitos: Docker Engine + Docker Compose v2.
-
-Puertos: API `8080`, MySQL host `3308` (contenedor `3306`; el `3306` del host está
-reservado por un mysqld nativo), MongoDB `27017`. Dentro de la red Docker la app usa
-`mysql-db:3306` y `mongo-db:27017` (nunca `localhost`).
-
-```bash
-# Construir la imagen de la aplicación desde cero
+```powershell
+docker compose config --quiet
 docker compose build --no-cache
-
-# Levantar todo (API + MySQL + MongoDB)
 docker compose up -d
-
-# Estado y salud
 docker compose ps
-curl http://localhost:8080/health
+```
 
-# Logs
-docker compose logs -f bank-api
+Open:
 
-# Apagado (conserva los volúmenes con datos)
+- Frontend: http://localhost:5173
+- Backend health: http://localhost:8080/health
+
+Expected services:
+
+| Service | Purpose | Address |
+|---|---|---|
+| `frontend` | React application served by Nginx | `localhost:5173` |
+| `bank-api` | Express REST API | `localhost:8080` |
+| `mysql-db` | Relational persistence | host `3308`, container `3306` |
+| `mongo-db` | Audit persistence | `localhost:27017` |
+
+Inspect logs:
+
+```powershell
+docker compose logs --tail=200 bank-api
+docker compose logs --tail=200 frontend
+docker compose logs --tail=200 mysql-db
+docker compose logs --tail=200 mongo-db
+```
+
+Stop the stack while preserving data:
+
+```powershell
 docker compose down
 ```
 
-Variables: el servicio `bank-api` toma valores de desarrollo desde `environment` en
-`docker-compose.yml` (ver `backend/.env.example` para ejecución local con
-`npm run start`). No hay secretos reales en el repositorio.
+Delete database volumes only intentionally:
 
-Pruebas fuera del contenedor: `cd backend && npm test`.
-Pruebas E2E automatizadas (requieren `docker compose up -d`):
-`cd backend && npm run test:e2e`.
+```powershell
+docker compose down -v
+```
 
-Poblamiento de datos (recorre todos los endpoints validando respuestas):
-`cd backend && npm run seed` (requiere `docker compose up -d`).
-Crea empleados base, clientes, cuentas, préstamos, transferencias y auditoría.
-Pruebas dentro del contenedor: `docker compose exec bank-api npm test`
-(requiere dependencias de desarrollo en la imagen; la imagen de producción solo trae
-dependencias de runtime).
+## Validation
 
-Limpiar volúmenes solo cuando sea intencional (borra los datos):
-`docker compose down -v`.
+Backend tests inside Docker:
 
-## Credits
+```powershell
+docker compose exec bank-api npm test
+```
 
-Created by andfsanchezag as part of an educational endeavor to demonstrate:
-- Domain-Driven Design implementation
-- TypeScript best practices
-- Clean architecture principles
-- Comprehensive testing strategies
+Backend seed data:
 
-This repository serves as a reference implementation for building complex business applications with proper domain modeling and architectural patterns.
+```powershell
+docker compose exec bank-api npm run seed
+```
+
+Frontend validation image:
+
+```powershell
+docker build --target build --build-arg VITE_API_BASE_URL=http://localhost:8080 -t aurora-frontend-validation ./frontend
+docker run --rm aurora-frontend-validation npm run lint
+docker run --rm aurora-frontend-validation npm test -- --run
+```
+
+Frontend live tests:
+
+```powershell
+docker run --rm --network host -e LIVE_BASE_URL=http://localhost:8080 aurora-frontend-validation npm run test:live
+```
+
+Screenshot evidence:
+
+```powershell
+docker run --rm -v "${PWD}/frontend/test/screenshots:/app/test/screenshots" aurora-frontend-validation npm run shots
+```
+
+Visual evidence is stored under `frontend/test/screenshots/` and includes mobile, tablet and desktop viewports.
+
+## Documentation
+
+- C4 architecture: [docs/c4-architecture.md](docs/c4-architecture.md).
+- Backend contracts: [backendSDD](backendSDD/).
+- Frontend contracts: [frontendSDD](frontendSDD/).
+- Backend implementation guide: [backend/INSTRUCTIONS.md](backend/INSTRUCTIONS.md).
+- Frontend implementation guide: [frontend/INSTRUCTIONS.md](frontend/INSTRUCTIONS.md).
+- Repository-wide instructions: [INSTRUCTIONS.md](INSTRUCTIONS.md).
+- Backend orchestrator: [backendSDD/Backend-orchestrator-prompt.md](backendSDD/Backend-orchestrator-prompt.md).
+- Frontend orchestrator: [frontendSDD/Frontend-orchestrator-prompt.md](frontendSDD/Frontend-orchestrator-prompt.md).
+
+## Author
+
+**andfsanchezag**
+
+This project was developed as a portfolio-oriented demonstration of full-stack TypeScript, domain modeling, clean architecture, secure API design and Docker-based delivery.
+
+## License
+
+This project is distributed under the license defined in [LICENSE](LICENSE).
