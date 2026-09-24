@@ -64,7 +64,7 @@ Comprehensive domain exceptions for all failure scenarios:
 ## Project Structure
 
 ```
-src/main/javascript/
+backend/
 ├── application/
 │   ├── domain/
 │   │   ├── models/          # Core domain entities
@@ -121,7 +121,7 @@ npm test
 npm run coverage
 
 # Run specific test files
-# vitest src/main/javascript/test/domain/models/BankAccount.test.ts
+# vitest backend/test/domain/models/BankAccount.test.ts
 ```
 
 ### Development
@@ -265,15 +265,15 @@ docker compose down
 ```
 
 Variables: el servicio `bank-api` toma valores de desarrollo desde `environment` en
-`docker-compose.yml` (ver `src/main/javascript/.env.example` para ejecución local con
+`docker-compose.yml` (ver `backend/.env.example` para ejecución local con
 `npm run start`). No hay secretos reales en el repositorio.
 
-Pruebas fuera del contenedor: `cd src/main/javascript && npm test`.
+Pruebas fuera del contenedor: `cd backend && npm test`.
 Pruebas E2E automatizadas (requieren `docker compose up -d`):
-`cd src/main/javascript && npm run test:e2e`.
+`cd backend && npm run test:e2e`.
 
 Poblamiento de datos (recorre todos los endpoints validando respuestas):
-`cd src/main/javascript && npm run seed` (requiere `docker compose up -d`).
+`cd backend && npm run seed` (requiere `docker compose up -d`).
 Crea empleados base, clientes, cuentas, préstamos, transferencias y auditoría.
 Pruebas dentro del contenedor: `docker compose exec bank-api npm test`
 (requiere dependencias de desarrollo en la imagen; la imagen de producción solo trae

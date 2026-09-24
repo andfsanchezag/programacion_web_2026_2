@@ -41,7 +41,7 @@ services:
 
   bank-api:
     build:
-      context: ./src/main/javascript
+      context: ./backend
       dockerfile: Dockerfile
     image: bank-api:local
     container_name: bank-api
