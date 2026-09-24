@@ -46,11 +46,13 @@ Read before editing:
 - `frontendSDD/Frontend-Domain-Services.md`
 - `frontendSDD/Frontend-Adapters.md`
 - `frontendSDD/Frontend-Role-Modules.md`
-- `backendbackendbackendSDD/Contract-alignment.md`
-- `backendbackendbackendSDD/Adapters/Api-rest-endpoints.md`
-- `backendbackendbackendSDD/Adapters/Rest-validation.md`
-- `backendbackendbackendSDD/Adapters/Global-exception-handler.md`
-- `backendbackendbackendSDD/Backend-Cors-Security.md`
+- `frontendSDD/Frontend-Design-System.md`
+- `frontendSDD/Frontend-User-Flows.md`
+- `backendSDD/Contract-alignment.md`
+- `backendSDD/Adapters/Api-rest-endpoints.md`
+- `backendSDD/Adapters/Rest-validation.md`
+- `backendSDD/Adapters/Global-exception-handler.md`
+- `backendSDD/Backend-Cors-Security.md`
 
 The backend contracts are authoritative for URL, HTTP method, DTO fields, status, JWT claims, roles and error codes.
 
@@ -126,6 +128,29 @@ Every authenticated customer or company-related user must land on a summary dash
 
 Implement stable loading skeletons, disabled states during mutation, retry actions, empty states, responsive layout and meaningful animations. Use SweetAlert2 for every expected error and confirmation of financial/destructive actions. Never hide a backend error silently.
 
+### F6.1. Required experience flow
+
+Implement the following observable behavior, not only the underlying requests:
+
+1. Public entry opens on a branded-but-original banking login with username/password validation, loading state and clear recovery from `401`.
+2. After login, show a short transition into the role dashboard; do not render a blank screen while summary requests are pending.
+3. Dashboard cards show product name, status, balance or amount, last update and a direct action. Cards have skeletons, empty states and retry controls.
+4. Financial forms validate locally before sending, disable submit while pending, confirm irreversible actions, show success feedback and refresh affected summaries.
+5. Errors use the backend stable `code`, a human-safe message and `requestId` support detail where useful; never expose stack traces or raw database text.
+6. A `401` clears the session and returns to login with an expiration message. A `403` keeps the session and shows a forbidden alert. A `409` explains the business conflict and preserves entered form data.
+7. Every role has a persistent navigation shell, visible active route, breadcrumb or page title, responsive mobile navigation and logout action.
+8. Long-running consultations use skeletons or progress indicators; mutations use a focused button state so users know which action is pending.
+9. Destructive and financial actions require SweetAlert confirmation with explicit amount, account, destination or loan identity before execution.
+10. Empty collections explain the next useful action rather than showing an unexplained blank panel.
+
+### F6.2. Component and accessibility requirements
+
+- Build reusable `Button`, `Input`, `Select`, `Modal`, `Alert`, `Skeleton`, `DataTable`, `StatusBadge`, `MoneyAmount`, `AccountCard`, `LoanCard` and `TransferCard` components.
+- Every input has a label, validation message and keyboard-accessible focus state.
+- Every async action exposes a visible busy state and disables duplicate submission.
+- Color is never the sole indicator of status; pair it with text or an icon.
+- Tables and cards remain usable at mobile widths without horizontal overflow where avoidable.
+
 ### F7. Testing
 
 Create tests for:
@@ -138,6 +163,9 @@ Create tests for:
 - every module's main flow;
 - SweetAlert invocation for each error category;
 - endpoint smoke flows against the real backend when available.
+- desktop and mobile screenshots for login, loading, dashboard, empty, error, confirmation and success states;
+- keyboard, focus, contrast and reduced-motion accessibility checks;
+- role-by-role user journey tests from login to logout.
 
 ### F8. Docker and delivery
 
@@ -152,7 +180,12 @@ Do not report `COMPLETE` until:
 - JWT is sent on every protected request;
 - every role has a protected module and dashboard behavior;
 - loading animations, error alerts and retry states work;
-- CORS contract is verified against `backendbackendbackendSDD/Backend-Cors-Security.md`;
+- the design system and user flows in `Frontend-Design-System.md` and `Frontend-User-Flows.md` are implemented;
+- the interface uses original identity and assets, with no third-party corporate names, logos or proprietary visual material;
+- responsive screenshots and accessibility checks pass at the documented viewports;
+- CORS contract is verified against `backendSDD/Backend-Cors-Security.md`;
+- required experience flows, loading states, error states and financial confirmations are tested per role;
+- all endpoint mappings have a verified HTTP test or an explicit backend-blocked record;
 - build, lint, unit tests and smoke/E2E tests pass;
 - no endpoint, role, DTO or error mapping remains unverified.
 

@@ -31,7 +31,7 @@ Para garantizar evaluaciones objetivas y evitar contaminación cruzada de contex
 1. **Inicio de Sesión:** El agente debe iniciar un ciclo de análisis aislado por cada subcarpeta de estudiante `{nombre_estudiante}`.
 2. **Carga de Contexto Aislada:** Cargar en memoria únicamente:
    - La especificación funcional base del problema NexusMarket (`especificacion_funcional_nexusmarket.md`).
-   - La especificación documental del estudiante (`{nombre_estudiante}/backendbackendSDD/`).
+   - La especificación documental del estudiante (`{nombre_estudiante}/backendSDD/`).
    - El código fuente Java del estudiante (`{nombre_estudiante}/src/` o `{nombre_estudiante}/nexusmarket/src/`).
 3. **Cierre de Sesión:** Al finalizar la calificación del estudiante, guardar el archivo `{nombre_estudiante}/evaluacion1.md` y liberar el contexto antes de iniciar el análisis de la siguiente carpeta.
 
@@ -63,11 +63,11 @@ Nota Final = (Criterio 1 * 0.20) + (Criterio 2 * 0.30) + (Criterio 3 * 0.25) + (
 
 | Criterio | Peso | Descripción | Excelente (5.0) | Aceptable (3.0 - 3.9) | Insuficiente (1.0 - 2.9) | Pésimo (0.0) |
 | :--- | :---: | :--- | :--- | :--- | :--- | :--- |
-| **1. Especificación en SDD** | **20%** | Existencia y calidad de la documentación de modelos en archivos `.md` o `.txt` dentro de la carpeta `{nombre_estudiante}/backendbackendSDD/`. | Especificación detallada y clara en `backendbackendSDD/` respondiendo a los requerimientos de `especificacion_funcional_nexusmarket.md`. | Especificación presente en `backendbackendSDD/`, pero con falta de detalle en algunas reglas o atributos del negocio del Marketplace. | Documentación en `backendbackendSDD/` muy escasa, confusa o incompleta. | No existe la carpeta `backendbackendSDD/` o los archivos están vacíos. |
+| **1. Especificación en SDD** | **20%** | Existencia y calidad de la documentación de modelos en archivos `.md` o `.txt` dentro de la carpeta `{nombre_estudiante}/backendSDD/`. | Especificación detallada y clara en `backendSDD/` respondiendo a los requerimientos de `especificacion_funcional_nexusmarket.md`. | Especificación presente en `backendSDD/`, pero con falta de detalle en algunas reglas o atributos del negocio del Marketplace. | Documentación en `backendSDD/` muy escasa, confusa o incompleta. | No existe la carpeta `backendSDD/` o los archivos están vacíos. |
 | **2. Modelado de Entidades en Java** | **30%** | Definición de clases de entidad de dominio en Java (`User`, `Product`, `Warehouse`, `Order`, `Inventory`, etc.) con identidades y comportamiento. | Entidades bien delimitadas en Java, representando el dominio de NexusMarket con identidades únicas y comportamiento DDD. | Entidades creadas en Java, pero con mezcla de responsabilidades o lógica acoplada a persistencia/infraestructura. | Clases anémicas (solo getters/setters sin comportamiento) o incompletas respecto al dominio. | Ausencia de clases de dominio o desorganización total. |
 | **3. Value Objects vs. Primitivos** | **25%** | Reemplazo de `String` abiertos por `Enums` o `Value Objects` para valores acotados/validados (`OrderStatus`, `UserRole`, `ProductType`, etc.). | Uso consistente de `Enums` o `Value Objects` para estados y tipos del Marketplace. **Cero `String` abiertos** en campos acotados. | Uso de `Enums` en la mayoría de estados, pero persisten 1 o 2 atributos clave como `String` abierto. | Uso masivo de `String` o tipos primitivos para estados, roles y tipos (obsesión por primitivos). | No se utilizan `Enums` ni `Value Objects` en ninguna parte del modelo. |
-| **4. Idioma y Convenciones (Java)** | **15%** | Código Java 100% en inglés (nombres de clases, atributos, métodos y paquetes). La documentación en `backendbackendSDD/` puede estar en español. | Todo el código Java está escrito 100% en inglés con naming consistente y buenas prácticas Java. | Código en Java mayoritariamente en inglés, con spanglish o inconsistencias menores. | Mezcla frecuente de español e inglés en clases, atributos o métodos en Java. | Código Java escrito completamente en español. |
-| **5. Correlación SDD vs. Código Java** | **10%** | Trazabilidad y coincidencia 1:1 entre los modelos descritos en `backendbackendSDD/` y las clases creadas en Java. | Trazabilidad exacta 1:1 entre los modelos especificados en `backendbackendSDD/` y las clases Java del estudiante. | Diferencias menores entre nombres o atributos especificados en `backendbackendSDD/` y los implementados en Java. | Poca correspondencia entre la documentación de `backendbackendSDD/` y el código en Java. | El modelo documentado en `backendbackendSDD/` no guarda relación con el código en Java. |
+| **4. Idioma y Convenciones (Java)** | **15%** | Código Java 100% en inglés (nombres de clases, atributos, métodos y paquetes). La documentación en `backendSDD/` puede estar en español. | Todo el código Java está escrito 100% en inglés con naming consistente y buenas prácticas Java. | Código en Java mayoritariamente en inglés, con spanglish o inconsistencias menores. | Mezcla frecuente de español e inglés en clases, atributos o métodos en Java. | Código Java escrito completamente en español. |
+| **5. Correlación SDD vs. Código Java** | **10%** | Trazabilidad y coincidencia 1:1 entre los modelos descritos en `backendSDD/` y las clases creadas en Java. | Trazabilidad exacta 1:1 entre los modelos especificados en `backendSDD/` y las clases Java del estudiante. | Diferencias menores entre nombres o atributos especificados en `backendSDD/` y los implementados en Java. | Poca correspondencia entre la documentación de `backendSDD/` y el código en Java. | El modelo documentado en `backendSDD/` no guarda relación con el código en Java. |
 
 ---
 
@@ -89,7 +89,7 @@ Para cada repositorio evaluado, guardar la retroalimentación dentro de la carpe
 ### 1. Especificación en SDD (20%) - Puntaje: [0.0 - 5.0]
 - **Estado:** [Excelente / Aceptable / Insuficiente / Pésimo]
 - **Observaciones y Evidencias:**
-  - Archivos analizados: [Citar rutas exactas, ej. backendbackendSDD/Domain/Domain Model.md]
+  - Archivos analizados: [Citar rutas exactas, ej. backendSDD/Domain/Domain Model.md]
   - Hallazgos respecto a `especificacion_funcional_nexusmarket.md`: [Detallar calidad del contenido y modelo documentado]
 
 ### 2. Modelado de Entidades en Java (30%) - Puntaje: [0.0 - 5.0]

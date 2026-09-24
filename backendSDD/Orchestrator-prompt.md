@@ -2,7 +2,7 @@
 
 Este documento define el **Prompt del Agente Orquestador (Master Coordinator)** encargado de dirigir múltiples agentes especializados para implementar de forma automatizada y paralelizada la totalidad del código fuente de la aplicación, siguiendo estrictamente la especificación de **Software Design Document (SDD)**, la **Arquitectura Hexagonal (DDD + Ports & Adapters)** y la configuración de infraestructura local auto-generada con **MySQL (3306)** y **MongoDB (27017)**.
 
-La política contractual transversal y la precedencia entre documentos estarán definidas en `backendbackendbackendSDD/Contract-alignment.md`. Ninguna fase puede reinterpretar firmas, nombres, códigos HTTP o puertos en contradicción con ese documento.
+La política contractual transversal y la precedencia entre documentos estarán definidas en `backendSDD/Contract-alignment.md`. Ninguna fase puede reinterpretar firmas, nombres, códigos HTTP o puertos en contradicción con ese documento.
 
 ## 0. Entrega física obligatoria del repositorio
 
@@ -24,8 +24,8 @@ El agente debe entregar esta estructura final, independientemente de si el backe
 │   ├── .env.example
 │   ├── Dockerfile
 │   └── README.md
-├── backendbackendbackendSDD/                    # todos los SDD del backend
-├── frontendbackendbackendSDD/                   # todos los SDD del frontend
+├── backendSDD/                    # todos los SDD del backend
+├── frontendbackendSDD/                   # todos los SDD del frontend
 ├── docker-compose.yml             # backend, frontend, MySQL y MongoDB
 └── README.md
 ```
@@ -94,7 +94,7 @@ Si faltan herramientas, dependencias o infraestructura, el orquestador debe regi
 
 ### 2.2. Estado persistente de la orquestación
 
-El estado debe quedar escrito en un artefacto versionable, preferiblemente `backendbackendSDD/orchestrator-state.md` o `backendbackendSDD/orchestrator-state.json`. Cada ejecución debe actualizarlo después de cada tarea con:
+El estado debe quedar escrito en un artefacto versionable, preferiblemente `backendSDD/orchestrator-state.md` o `backendSDD/orchestrator-state.json`. Cada ejecución debe actualizarlo después de cada tarea con:
 
 ```text
 runId, fecha, stack, fase, tarea, estado, archivos, evidencia,
@@ -103,7 +103,7 @@ comando, exitCode, pruebas, bloqueos, siguienteAccion
 
 Si el artefacto no existe, crearlo antes de implementar. Si existe, leerlo y contrastarlo con el repositorio y las validaciones actuales; nunca confiar ciegamente en un estado antiguo. Los cambios de código y el estado deben poder asociarse mediante el `runId` o una referencia de commit.
 
-El estado debe incluir una fila de alineación para `backendbackendbackendSDD/Contract-alignment.md`, además de filas para `Api-rest-endpoints.md`, `Rest-validation.md`, `Global-exception-handler.md`, cada puerto, cada fase, la implementación frontend, cada módulo por rol y cada gate Docker.
+El estado debe incluir una fila de alineación para `backendSDD/Contract-alignment.md`, además de filas para `Api-rest-endpoints.md`, `Rest-validation.md`, `Global-exception-handler.md`, cada puerto, cada fase, la implementación frontend, cada módulo por rol y cada gate Docker.
 
 ---
 
@@ -126,7 +126,7 @@ Antes de ejecutar cualquier fase de implementación, produce internamente una ta
 | Containerización | Dockerfile, .dockerignore, Compose, healthchecks, red y volúmenes | ... | ... | build/up/smoke/down |
 | Pruebas | unitarias, integración, E2E | ... | ... | comandos reales |
 
-Documentos contractuales obligatorios: todos los Markdown de `backendbackendbackendSDD/` y `frontendbackendbackendSDD/`. Como mínimo deben existir `backendbackendbackendSDD/Contract-alignment.md`, `backendbackendbackendSDD/Backend-Cors-Security.md`, los contratos de dominio y adapters del backend, y `frontendbackendbackendSDD/Frontend-SDD.md`, `frontendbackendbackendSDD/Frontend-Architecture.md`, `frontendbackendbackendSDD/Frontend-Domain-Services.md`, `frontendbackendbackendSDD/Frontend-Adapters.md` y `frontendbackendbackendSDD/Frontend-Role-Modules.md`.
+Documentos contractuales obligatorios: todos los Markdown de `backendSDD/` y `frontendbackendSDD/`. Como mínimo deben existir `backendSDD/Contract-alignment.md`, `backendSDD/Backend-Cors-Security.md`, los contratos de dominio y adapters del backend, y `frontendbackendSDD/Frontend-SDD.md`, `frontendbackendSDD/Frontend-Architecture.md`, `frontendbackendSDD/Frontend-Domain-Services.md`, `frontendbackendSDD/Frontend-Adapters.md` y `frontendbackendSDD/Frontend-Role-Modules.md`.
 
 El diagnóstico debe evaluar **cada etapa y cada entregable**, no solo el área general. Para cada fase (`0A`, `0B`, `0C`, `0D`, `1`, `2A`, `2B`, `2C`, `3A`, `3B`, `4`, `5A`, `5B`, `F` y `6`) debe registrar como mínimo:
 
@@ -146,7 +146,7 @@ Procedimiento obligatorio:
 
 No se permite marcar una fase como `VERIFIED` si uno de sus entregables está `PARTIAL`, `FAILING` o no tiene una validación ejecutada. Las tareas pendientes de una fase anterior tienen prioridad sobre la generación de una fase posterior.
 
-Antes de seleccionar la tarea, ejecutar también el **alignment gate** de `backendbackendbackendSDD/Contract-alignment.md`: detectar firmas incompatibles, nombres duplicados, discrepancias `400/422`, endpoints sin matriz de errores y diferencias entre puertos host y contenedor. Cualquier hallazgo selecciona `REPAIR_CONTRACT` antes de continuar.
+Antes de seleccionar la tarea, ejecutar también el **alignment gate** de `backendSDD/Contract-alignment.md`: detectar firmas incompatibles, nombres duplicados, discrepancias `400/422`, endpoints sin matriz de errores y diferencias entre puertos host y contenedor. Cualquier hallazgo selecciona `REPAIR_CONTRACT` antes de continuar.
 
 Aplica estas decisiones en orden:
 
@@ -211,7 +211,7 @@ No ejecutar literalmente un comando de esta tabla si no existe en el proyecto. R
 1. **Detección de Lenguaje Existente:**
    - Si existen archivos `.java`, `pom.xml` o `build.gradle`, el stack asignado es **Java / Spring Boot** (ORM: Spring Data JPA + Spring Data MongoDB).
    - Si existen archivos `.ts`, `package.json` o `tsconfig.json`, el stack asignado es **TypeScript / NestJS / Express** (ORM: TypeORM / Prisma + Mongoose).
-   - Si el repositorio está completamente vacío, asumir por defecto el stack obligatorio **Java / Spring Boot** según el requerimiento de `backendbackendSDD/enunciado evaluativo.md`.
+   - Si el repositorio está completamente vacío, asumir por defecto el stack obligatorio **Java / Spring Boot** según el requerimiento de `backendSDD/enunciado evaluativo.md`.
 2. **Conserva de Convenciones:** Todas las Fases posteriores adaptarán las sintaxis, importaciones y frameworks al stack tecnológico detectado en esta fase.
 3. Si existen señales de más de un stack, no elegir por cantidad de archivos: identificar cuál contiene el punto de entrada, scripts ejecutables y pruebas activas. Registrar el stack elegido y los archivos que justifican la decisión.
 
@@ -277,12 +277,12 @@ Esta fase es exclusivamente documental. No genera componentes React ni instala d
 
 Debe producir y alinear estos documentos:
 
-- `frontendbackendbackendSDD/Frontend-SDD.md`: alcance, requisitos y criterios de aceptación.
-- `frontendbackendbackendSDD/Frontend-Architecture.md`: arquitectura, capas, dependencias y estructura.
-- `frontendbackendbackendSDD/Frontend-Domain-Services.md`: modelos, servicios de aplicación, dashboard y estados.
-- `frontendbackendbackendSDD/Frontend-Adapters.md`: cliente HTTP, sesión JWT, alertas y mapeo endpoint-servicio.
-- `frontendbackendbackendSDD/Frontend-Role-Modules.md`: módulos, rutas y componentes por rol.
-- `backendbackendbackendSDD/Backend-Cors-Security.md`: origen permitido, headers, JWT, preflight y pruebas CORS.
+- `frontendbackendSDD/Frontend-SDD.md`: alcance, requisitos y criterios de aceptación.
+- `frontendbackendSDD/Frontend-Architecture.md`: arquitectura, capas, dependencias y estructura.
+- `frontendbackendSDD/Frontend-Domain-Services.md`: modelos, servicios de aplicación, dashboard y estados.
+- `frontendbackendSDD/Frontend-Adapters.md`: cliente HTTP, sesión JWT, alertas y mapeo endpoint-servicio.
+- `frontendbackendSDD/Frontend-Role-Modules.md`: módulos, rutas y componentes por rol.
+- `backendSDD/Backend-Cors-Security.md`: origen permitido, headers, JWT, preflight y pruebas CORS.
 
 Gate de Fase 0D:
 
@@ -299,16 +299,16 @@ El orquestador no puede pasar a la implementación del frontend mientras este ga
 
 ### FASE F: Implementación completa del frontend React
 
-Esta fase genera código real después de aprobar la Fase 0D. El agente debe implementar el frontend dentro de `frontend/` usando React + TypeScript y los contratos de `frontendbackendbackendSDD/`.
+Esta fase genera código real después de aprobar la Fase 0D. El agente debe implementar el frontend dentro de `frontend/` usando React + TypeScript y los contratos de `frontendbackendSDD/`.
 
 **Entregables obligatorios:**
 
 1. Crear o completar `frontend/package.json`, lockfile, `tsconfig`, configuración de build y `README.md`.
-2. Implementar la estructura definida en `frontendbackendbackendSDD/Frontend-Architecture.md`: `domain`, `application`, `adapters`, `modules`, `components`, router, guards y providers.
+2. Implementar la estructura definida en `frontendbackendSDD/Frontend-Architecture.md`: `domain`, `application`, `adapters`, `modules`, `components`, router, guards y providers.
 3. Implementar un cliente HTTP único apuntando a `VITE_API_BASE_URL`, con `Authorization: Bearer <JWT>` en cada petición protegida, `X-Request-Id`, timeout y manejo uniforme de respuestas.
 4. Implementar sesión JWT: login, persistencia segura según el SDD, expiración, logout, limpieza ante `401` y guards por `SystemRole`.
-5. Implementar todos los servicios y mapeos de `frontendbackendbackendSDD/Frontend-Adapters.md`; no crear llamadas HTTP directamente dentro de páginas o componentes.
-6. Implementar las rutas públicas y los módulos de `frontendbackendbackendSDD/Frontend-Role-Modules.md` para `NATURAL_CUSTOMER`, `BUSINESS_CUSTOMER`, `BUSINESS_OPERATOR`, `BUSINESS_SUPERVISOR`, `TELLER_EMPLOYEE`, `COMMERCIAL_EMPLOYEE` e `INTERNAL_ANALYST`.
+5. Implementar todos los servicios y mapeos de `frontendbackendSDD/Frontend-Adapters.md`; no crear llamadas HTTP directamente dentro de páginas o componentes.
+6. Implementar las rutas públicas y los módulos de `frontendbackendSDD/Frontend-Role-Modules.md` para `NATURAL_CUSTOMER`, `BUSINESS_CUSTOMER`, `BUSINESS_OPERATOR`, `BUSINESS_SUPERVISOR`, `TELLER_EMPLOYEE`, `COMMERCIAL_EMPLOYEE` e `INTERNAL_ANALYST`.
 7. Implementar dashboard inicial por rol. Clientes y usuarios asociados a empresas deben ver resumen de productos, cuentas, saldos, préstamos, transferencias u operaciones según autorización.
 8. Implementar estados `loading`, `empty`, `success`, `error` y `retry`, con skeletons o animaciones estables durante consultas.
 9. Integrar SweetAlert2 mediante un adapter central para validaciones, errores, confirmaciones financieras y operaciones exitosas.
@@ -318,7 +318,7 @@ Esta fase genera código real después de aprobar la Fase 0D. El agente debe imp
 
 **Reglas de implementación:**
 
-- No inventar endpoints, DTOs, roles, códigos HTTP o campos que no estén en `backendbackendbackendSDD/`.
+- No inventar endpoints, DTOs, roles, códigos HTTP o campos que no estén en `backendSDD/`.
 - Cada servicio frontend debe tener al menos una prueba de mapeo y un caso de error.
 - Cada guard debe tener pruebas para acceso permitido, `401` y `403`.
 - Cada módulo debe tener una prueba de renderizado/flujo principal y una prueba de estado de carga o error.
@@ -336,7 +336,7 @@ Esta fase genera código real después de aprobar la Fase 0D. El agente debe imp
 - Modelos de Dominio en `domain/models/`: `Person`, `Customer` (`NaturalCustomer`, `BusinessCustomer`), `User`, `BankingProduct` (`BankAccount`, `Loan`, `Transfer`), `Operation`, `AuditLog`.
 - Value Objects y Enums en `domain/enums/` y `domain/valueobjects/`: `AccountStatus`, `LoanStatus`, `TransferStatus`, `UserRole`, `OperationType`, `ApprovalDecision`, etc.
 - Excepciones de Dominio en `domain/exceptions/`.
-- Interfaces de Puertos de Salida (`Output Ports`) en `domain/ports/out/`: `CustomerRepositoryPort`, `UserRepositoryPort`, `BankAccountRepositoryPort`, `LoanRepositoryPort`, `TransferRepositoryPort`, `OperationRepositoryPort`, `AuditLogRepositoryPort`, `PasswordServicePort` y `JwtTokenServicePort`. Los alias heredados se rigen por `backendbackendSDD/Contract-alignment.md` y no pueden crear contratos duplicados.
+- Interfaces de Puertos de Salida (`Output Ports`) en `domain/ports/out/`: `CustomerRepositoryPort`, `UserRepositoryPort`, `BankAccountRepositoryPort`, `LoanRepositoryPort`, `TransferRepositoryPort`, `OperationRepositoryPort`, `AuditLogRepositoryPort`, `PasswordServicePort` y `JwtTokenServicePort`. Los alias heredados se rigen por `backendSDD/Contract-alignment.md` y no pueden crear contratos duplicados.
 
 ---
 
@@ -346,17 +346,17 @@ Una vez completada la Fase 1, el Orquestador **lanza en paralelo 3 sub-agentes i
 #### [PARALELO 2A] Sub-Agente Persistencia Relacional (MySQL - 3306)
 **Rol lógico:** `relational-persistence-agent` (asignar a un agente disponible)
 **Prompt de Invocación:**
-> "Implementa la persistencia relacional en `adapters/persistence/relational/` (o `jpa/` / `typeorm/` según el stack detectado). Crea las Entidades ORM (`@Entity`) con auto-generación de tablas para MySQL 3306, sus Mappers bidireccionales (`Domain Model` ↔ `ORM Entity`), las interfaces de repositorio (`SpringDataJpaRepository` o `TypeORM Repository`) y las clases de Adaptadores que implementan los `Output Ports` (`BankAccountAdapter`, `CustomerAdapter`, etc.). Refiérete al documento `backendbackendSDD/Adapters/Persistence-adapters.md`."
+> "Implementa la persistencia relacional en `adapters/persistence/relational/` (o `jpa/` / `typeorm/` según el stack detectado). Crea las Entidades ORM (`@Entity`) con auto-generación de tablas para MySQL 3306, sus Mappers bidireccionales (`Domain Model` ↔ `ORM Entity`), las interfaces de repositorio (`SpringDataJpaRepository` o `TypeORM Repository`) y las clases de Adaptadores que implementan los `Output Ports` (`BankAccountAdapter`, `CustomerAdapter`, etc.). Refiérete al documento `backendSDD/Adapters/Persistence-adapters.md`."
 
 #### [PARALELO 2B] Sub-Agente Persistencia NoSQL Auditoría (Mongo - 27017)
 **Rol lógico:** `mongo-persistence-agent` (asignar a un agente disponible)
 **Prompt de Invocación:**
-> "Implementa la persistencia NoSQL de auditoría en `adapters/persistence/mongodb/` (o `mongoose/`). Crea los Documentos/Esquemas Mongo mapeando a la base de datos `audit_db` en el puerto 27017, Mappers bidireccionales (`AuditLog` ↔ `Mongo Document`), interfaces de repositorio y la clase adaptadora `AuditLogMongoAdapter` implementando `AuditLogRepositoryPort`. Refiérete a `backendbackendSDD/Adapters/Persistence-adapters.md` y `backendbackendSDD/Contract-alignment.md`."
+> "Implementa la persistencia NoSQL de auditoría en `adapters/persistence/mongodb/` (o `mongoose/`). Crea los Documentos/Esquemas Mongo mapeando a la base de datos `audit_db` en el puerto 27017, Mappers bidireccionales (`AuditLog` ↔ `Mongo Document`), interfaces de repositorio y la clase adaptadora `AuditLogMongoAdapter` implementando `AuditLogRepositoryPort`. Refiérete a `backendSDD/Adapters/Persistence-adapters.md` y `backendSDD/Contract-alignment.md`."
 
 #### [PARALELO 2C] Sub-Agente Puertos de Entrada por Rol (Input Ports)
 **Rol lógico:** `input-ports-agent` (asignar a un agente disponible)
 **Prompt de Invocación:**
-> "Crea la totalidad de las interfaces de Puertos de Entrada agrupadas por Rol en `domain/ports/in/` (`PublicAccessPort`, `NaturalCustomerPort`, `BusinessCustomerPort`, `BusinessOperatorPort`, `BusinessSupervisorPort`, `TellerEmployeePort`, `CommercialEmployeePort`, `InternalAnalystPort`). Asegúrate de que todas las firmas utilicen el objeto de dominio `User` y modelos de dominio en el lenguaje detectado. Refiérete exactamente al documento `backendbackendSDD/Domain/Input-ports.md`."
+> "Crea la totalidad de las interfaces de Puertos de Entrada agrupadas por Rol en `domain/ports/in/` (`PublicAccessPort`, `NaturalCustomerPort`, `BusinessCustomerPort`, `BusinessOperatorPort`, `BusinessSupervisorPort`, `TellerEmployeePort`, `CommercialEmployeePort`, `InternalAnalystPort`). Asegúrate de que todas las firmas utilicen el objeto de dominio `User` y modelos de dominio en el lenguaje detectado. Refiérete exactamente al documento `backendSDD/Domain/Input-ports.md`."
 
 ---
 
@@ -367,8 +367,8 @@ Una vez completadas las tareas de la Fase 2, el Orquestador **lanza en paralelo 
 **Rol lógico:** `domain-services-usecases-agent` (asignar a un agente disponible)
 **Prompt de Invocación:**
 > "Implementa con cumplimiento estricto a las especificaciones de SDD:
-> 1. Clases de Servicios de Dominio en `domain/services/` (`UserAuthenticationService`, `CustomerService`, `BankAccountService`, `LoanService`, `TransferService`, `OperationAuditService`, `AuthorizationService`) aplicando **estrictamente cada regla de negocio, validación, precondición, flujo y manejo de excepciones pactadas** en `backendbackendSDD/Domain/Domain Services.md` y los archivos detallados de subdominio en `backendbackendSDD/Domain/services/` (`user-authentication-services.md`, `customer-services.md`, `bank-account-services.md`, `loan-services.md`, `transfer-services.md`, `operation-audit-services.md`, `authorization-services.md`).
-> 2. Clases de Casos de Uso en `adapters/useCases/` (`PublicAccessUseCaseImpl`, `NaturalCustomerUseCaseImpl`, etc.) implementando las interfaces de Puertos de Entrada por Rol e inyectando las clases concretas de Servicios de Dominio. Refiérete a `backendbackendSDD/Adapters/Use-cases-adapters.md`."
+> 1. Clases de Servicios de Dominio en `domain/services/` (`UserAuthenticationService`, `CustomerService`, `BankAccountService`, `LoanService`, `TransferService`, `OperationAuditService`, `AuthorizationService`) aplicando **estrictamente cada regla de negocio, validación, precondición, flujo y manejo de excepciones pactadas** en `backendSDD/Domain/Domain Services.md` y los archivos detallados de subdominio en `backendSDD/Domain/services/` (`user-authentication-services.md`, `customer-services.md`, `bank-account-services.md`, `loan-services.md`, `transfer-services.md`, `operation-audit-services.md`, `authorization-services.md`).
+> 2. Clases de Casos de Uso en `adapters/useCases/` (`PublicAccessUseCaseImpl`, `NaturalCustomerUseCaseImpl`, etc.) implementando las interfaces de Puertos de Entrada por Rol e inyectando las clases concretas de Servicios de Dominio. Refiérete a `backendSDD/Adapters/Use-cases-adapters.md`."
 
 #### [PARALELO 3B] Sub-Agente DTOs, Mappers y Controladores REST
 **Rol lógico:** `rest-controllers-agent` (asignar a un agente disponible)
@@ -376,8 +376,8 @@ Una vez completadas las tareas de la Fase 2, el Orquestador **lanza en paralelo 
 > "Crea en `adapters/rest/`:
 > 1. Todos los Request y Response DTOs para cada caso de uso.
 > 2. Mappers bidireccionales (`RequestDTO` ↔ `Domain Model` ↔ `ResponseDTO`).
-> 3. La validación de solicitudes según `backendbackendSDD/Adapters/Rest-validation.md`.
-> 4. Los Controladores REST en `adapters/rest/controllers/` exponiendo las rutas HTTP (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`) de acuerdo con `backendbackendSDD/Adapters/Api-rest-endpoints.md`, y registrando cada endpoint en la matriz de trazabilidad de `backendbackendSDD/Contract-alignment.md`. Inyecta las interfaces de los Puertos de Entrada por Rol."
+> 3. La validación de solicitudes según `backendSDD/Adapters/Rest-validation.md`.
+> 4. Los Controladores REST en `adapters/rest/controllers/` exponiendo las rutas HTTP (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`) de acuerdo con `backendSDD/Adapters/Api-rest-endpoints.md`, y registrando cada endpoint en la matriz de trazabilidad de `backendSDD/Contract-alignment.md`. Inyecta las interfaces de los Puertos de Entrada por Rol."
 
 ---
 
@@ -388,7 +388,7 @@ Una vez completadas las tareas de la Fase 2, el Orquestador **lanza en paralelo 
 > 1. `JwtProvider` (Generación y validación de tokens JWT con claims `userId`, `username`, `role`, `email`).
 > 2. `JwtAuthenticationFilter` que intercepte peticiones HTTP, extraiga las claims del JWT, reconstruya la entidad de dominio `User` y la coloque en el contexto de seguridad para ser inyectada en las clases REST y casos de uso.
 > 3. Configuración de Spring Security / Middleware autorizando las rutas REST de acuerdo al rol del token.
-> 4. Implementa el Global Exception Handler según `backendbackendSDD/Adapters/Global-exception-handler.md`: middleware global para TypeScript/Express o `@RestControllerAdvice` para Java/Spring.
+> 4. Implementa el Global Exception Handler según `backendSDD/Adapters/Global-exception-handler.md`: middleware global para TypeScript/Express o `@RestControllerAdvice` para Java/Spring.
 > 5. Mapea de forma determinística las excepciones a códigos HTTP y códigos de error estables. Los errores desconocidos deben responder `500`, nunca `400`.
 > 6. Devuelve el formato de error uniforme, registra `requestId`, evita filtrar secretos y maneja correctamente respuestas cuyos headers ya fueron enviados.
 > 7. Valida la compilación y conectividad con MySQL (3306) y MongoDB (27017)."
@@ -406,7 +406,7 @@ Una vez integrado el sistema, el Orquestador **lanza en paralelo 2 sub-agentes d
 **Prompt de Invocación:**
 > "Genera la suite completa de pruebas unitarias para la capa de Dominio en la ruta de pruebas real del stack detectado (`src/test/java/application/domain/` para Java o `test/domain/` para TypeScript):
 > 1. Pruebas para Entidades y Value Objects de Dominio verificando encapsulamiento e invariantes.
-> 2. Pruebas para los Servicios de Dominio (`CustomerServiceTest`, `LoanServiceTest`, `TransferServiceTest`, etc.) utilizando Mocks (Mockito / Jest) para aislar los Puertos de Salida. Valida el cumplimiento de todas las reglas de negocio y excepciones documentadas en `backendbackendSDD/Domain/services/`."
+> 2. Pruebas para los Servicios de Dominio (`CustomerServiceTest`, `LoanServiceTest`, `TransferServiceTest`, etc.) utilizando Mocks (Mockito / Jest) para aislar los Puertos de Salida. Valida el cumplimiento de todas las reglas de negocio y excepciones documentadas en `backendSDD/Domain/services/`."
 
 #### [PARALELO 5B] Sub-Agente Pruebas Unitarias de Adaptadores y REST
 **Rol lógico:** `adapters-unit-tests-agent` (asignar a un agente disponible)
@@ -431,7 +431,7 @@ Orden obligatorio:
 7. Probar `/health` desde el host y desde la red Docker cuando sea posible.
 8. Ejecutar pruebas de integración de adapters, bootstrap, cierre de conexiones y persistencia real.
 9. Probar los flujos REST principales: registro, login, autorización por rol, cuentas, préstamos, transferencias y auditoría.
-10. Comparar métodos, rutas, códigos HTTP, DTOs, estados y excepciones contra `backendbackendSDD/Adapters/Api-rest-endpoints.md`, `backendbackendSDD/Adapters/Rest-validation.md` y `backendbackendSDD/Adapters/Global-exception-handler.md`.
+10. Comparar métodos, rutas, códigos HTTP, DTOs, estados y excepciones contra `backendSDD/Adapters/Api-rest-endpoints.md`, `backendSDD/Adapters/Rest-validation.md` y `backendSDD/Adapters/Global-exception-handler.md`.
 11. Revisar que las operaciones críticas sean consistentes y que sus registros de `Operation` y `AuditLog` se creen correctamente.
 12. Detener el entorno con `docker compose down` y repetir el arranque en limpio; no declarar éxito si depende de artefactos o contenedores anteriores.
 
@@ -536,7 +536,7 @@ jwt.expiration-ms=3600000
 
 El Agente Orquestador declarará el desarrollo como **Exitoso y Completado** cuando se cumplan las siguientes condiciones:
 1. **Compilación y Pruebas Limpias:** Compilación/typecheck sin errores y **100% de pruebas unitarias ejecutadas con éxito** (JUnit 5 + Mockito / Jest). Debe registrarse el comando exacto, cantidad de pruebas y código de salida.
-2. **Cumplimiento Estricto del SDD de Servicios:** Las implementaciones en `domain/services/` cumplen sin omisiones cada precondición, flujo de validación, registro de operación, auditoría e inmutabilidad estipulados en `backendbackendSDD/Domain/Domain Services.md` y los archivos de subdominio en `backendbackendSDD/Domain/services/`.
+2. **Cumplimiento Estricto del SDD de Servicios:** Las implementaciones en `domain/services/` cumplen sin omisiones cada precondición, flujo de validación, registro de operación, auditoría e inmutabilidad estipulados en `backendSDD/Domain/Domain Services.md` y los archivos de subdominio en `backendSDD/Domain/services/`.
 3. **Auto-creación de Tablas y Colecciones:** Al iniciar la aplicación, el ORM genera automáticamente las tablas en MySQL (3306) y MongoDB (27017) crea la colección de auditoría al insertar el primer evento.
 4. **Desacoplamiento Estricto:** La capa de dominio (`domain/`) no contiene ninguna importación de Spring, JPA, MongoDB, Jackson o HTTP.
 5. **Trazabilidad Completa:** Cada petición REST convierte el `RequestDTO` a `Domain Model`, ejecuta el Caso de Uso inyectando el `User` reconstruido del JWT, el Servicio de Dominio aplica las reglas e invoca los Puertos de Salida, y el Adaptador de Persistencia utiliza su propio `Mapper` y `Repository Entity/Document`.
@@ -545,9 +545,9 @@ El Agente Orquestador declarará el desarrollo como **Exitoso y Completado** cua
 8. **Cierre Reproducible:** Un agente nuevo puede repetir el diagnóstico, obtener la misma fase siguiente y encontrar evidencia de cada gate sin depender de conocimiento conversacional no escrito en el repositorio.
 9. **Trazabilidad requisito-código-prueba:** cada requisito del SDD debe mapearse a uno o más archivos, una validación y un estado. Los requisitos sin prueba o evidencia quedan `PARTIAL`, nunca `VERIFIED`.
 10. **Entrega Docker Reproducible:** `Dockerfile`, `.dockerignore`, Compose, healthchecks, red, volúmenes, variables, build sin caché, arranque limpio, smoke tests y apagado pasan con evidencia registrada.
-11. **Global Exception Handler:** existe un handler global registrado, cumple `backendbackendSDD/Adapters/Global-exception-handler.md`, mapea las categorías HTTP, devuelve el formato uniforme y tiene pruebas de errores conocidos y desconocidos.
+11. **Global Exception Handler:** existe un handler global registrado, cumple `backendSDD/Adapters/Global-exception-handler.md`, mapea las categorías HTTP, devuelve el formato uniforme y tiene pruebas de errores conocidos y desconocidos.
 12. **Diagnóstico Completo por Etapas:** cada fase y cada entregable tiene estado, evidencia, gate ejecutado y tarea pendiente o confirmación `VERIFIED` en el estado persistente.
-13. **Alineación Cross-Stack:** `backendbackendSDD/Contract-alignment.md` está verificado; las firmas semánticas, alias, códigos HTTP, validaciones, endpoints y puertos host/contenedor coinciden en Java y TypeScript.
+13. **Alineación Cross-Stack:** `backendSDD/Contract-alignment.md` está verificado; las firmas semánticas, alias, códigos HTTP, validaciones, endpoints y puertos host/contenedor coinciden en Java y TypeScript.
 
 ### 5.2. Matriz mínima de trazabilidad
 

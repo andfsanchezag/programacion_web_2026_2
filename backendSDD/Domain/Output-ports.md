@@ -1,7 +1,7 @@
 # Output Ports
 
 Canonical names and Java/TypeScript adaptation rules are defined in
-`backendbackendSDD/Contract-alignment.md`. The canonical audit port is
+`backendSDD/Contract-alignment.md`. The canonical audit port is
 `AuditLogRepositoryPort`; the canonical TypeScript JWT port is
 `JwtTokenServicePort`. Legacy aliases must not create duplicate contracts.
 

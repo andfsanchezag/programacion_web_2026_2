@@ -3,7 +3,7 @@
 ## Run record (run-09: alineación completa SDD cross-stack — 2026-09-23)
 - runId: run-2026-09-23-alignment-09
 - fase: `REPAIR_CONTRACT` — alineación documental Java/TypeScript
-- archivos: `backendbackendSDD/Contract-alignment.md` (nuevo), `Orchestrator-prompt.md`,
+- archivos: `backendSDD/Contract-alignment.md` (nuevo), `Orchestrator-prompt.md`,
   `Domain/Input-ports.md`, `Domain/Output-ports.md`,
   `Adapters/Api-rest-endpoints.md`, `Adapters/Rest-validation.md`,
   `Adapters/Global-exception-handler.md`, `Adapters/Use-cases-adapters.md`
@@ -20,7 +20,7 @@
 
 ## Run record (run-08: validación DTO + Rest-validation — 2026-09-23)
 - runId: run-2026-09-23-validation-08
-- fase: `REPAIR_CONTRACT` (§6.1 DTOs) + doc `backendbackendSDD/Adapters/Rest-validation.md`
+- fase: `REPAIR_CONTRACT` (§6.1 DTOs) + doc `backendSDD/Adapters/Rest-validation.md`
 - archivos: `adapters/rest/validation/requestValidation.ts` (nuevo) + wiring en los
   4 mappers, `TellerController`, `updateProfile`, `approveLoan` y rutas (reject,
   payments, business-users, analyst-employee, audit-enum); `*StatusException`→409;

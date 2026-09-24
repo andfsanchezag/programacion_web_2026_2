@@ -1,6 +1,6 @@
 # Use Cases Adapters Specification
 
-Use-case signatures follow `backendbackendSDD/Contract-alignment.md`. Java and TypeScript
+Use-case signatures follow `backendSDD/Contract-alignment.md`. Java and TypeScript
 implementations may differ in synchronous versus `Promise` return types, but
 not in the meaning, order or required presence of domain parameters.
 

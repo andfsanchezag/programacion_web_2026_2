@@ -35,7 +35,7 @@ If the implementation later moves JWT to secure HttpOnly cookies, `credentials` 
 - The frontend sends `Authorization: Bearer <token>` for protected endpoints.
 - CORS does not replace JWT authentication or role authorization.
 - The backend must not accept credentials, passwords or tokens through query parameters.
-- Error responses follow `backendbackendSDD/Adapters/Global-exception-handler.md` and must not expose stack traces or database details.
+- Error responses follow `backendSDD/Adapters/Global-exception-handler.md` and must not expose stack traces or database details.
 - `X-Request-Id` is accepted or generated and returned for support diagnostics.
 - The backend must validate `Origin` according to the allow-list for browser requests.
 - Rate limiting, HTTPS and secure secret configuration are required for production deployment.

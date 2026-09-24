@@ -91,6 +91,9 @@ Financial actions such as transfers, withdrawals, loan approval, rejection and c
 | TransferService.rejectTransfer | PATCH | `/api/v1/business-supervisor/transfers/{transferId}/reject` | BUSINESS_SUPERVISOR |
 | AccountService.deposit | POST | `/api/v1/teller/accounts/{accountNumber}/deposits` | TELLER_EMPLOYEE |
 | AccountService.withdraw | POST | `/api/v1/teller/accounts/{accountNumber}/withdrawals` | TELLER_EMPLOYEE |
+| CustomerService.searchCustomer | GET | `/api/v1/teller/customers?identification=...` | TELLER_EMPLOYEE |
+| AccountService.openAccount | POST | `/api/v1/teller/accounts` | TELLER_EMPLOYEE |
+| AccountService.getAccount | GET | `/api/v1/teller/accounts/{accountNumber}` | TELLER_EMPLOYEE |
 | AccountService.blockAccount | PATCH | `/api/v1/teller/accounts/{accountNumber}/block` | TELLER_EMPLOYEE |
 | AccountService.unblockAccount | PATCH | `/api/v1/teller/accounts/{accountNumber}/unblock` | TELLER_EMPLOYEE |
 | AccountService.closeAccount | PATCH | `/api/v1/teller/accounts/{accountNumber}/close` | TELLER_EMPLOYEE |
@@ -103,4 +106,12 @@ Financial actions such as transfers, withdrawals, loan approval, rejection and c
 | LoanService.closeLoan | DELETE | `/api/v1/internal-analyst/loans/{loanId}` | INTERNAL_ANALYST |
 | AuditService.getAuditLogs | GET | `/api/v1/internal-analyst/audit-logs` | INTERNAL_ANALYST |
 
-The implementation must reconcile this table with the complete backend endpoint document before coding; undocumented backend extras require a contract decision.
+| SystemService.health | GET | `/health` | Public smoke check |
+
+The implementation must reconcile this table with the complete backend endpoint document and the actual backend route registry before coding. Every backend route must be either:
+
+- mapped to a frontend service and tested;
+- explicitly marked backend-only, such as seed/operational routes; or
+- recorded as `REPAIR_CONTRACT` if its public behavior is undocumented.
+
+The frontend endpoint coverage gate must report `mapped`, `backend-only`, `blocked` and `untested` counts. `COMPLETE` requires `blocked=0` and `untested=0` for all user-facing routes.

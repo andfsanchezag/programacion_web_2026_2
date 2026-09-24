@@ -1,8 +1,8 @@
 # API REST Endpoints Specification & Contracts
 
-This document is aligned with `backendbackendSDD/Contract-alignment.md`,
-`backendbackendSDD/Adapters/Rest-validation.md` and
-`backendbackendSDD/Adapters/Global-exception-handler.md`. For every endpoint, the method,
+This document is aligned with `backendSDD/Contract-alignment.md`,
+`backendSDD/Adapters/Rest-validation.md` and
+`backendSDD/Adapters/Global-exception-handler.md`. For every endpoint, the method,
 path, input port operation, validation rules, success response and principal
 error codes must be traceable as one contract.
 

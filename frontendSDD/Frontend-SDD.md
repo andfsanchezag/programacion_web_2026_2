@@ -23,17 +23,19 @@ The frontend must provide:
 
 The implementation must use these documents as source contracts:
 
-- `backendbackendSDD/Contract-alignment.md`
-- `backendbackendSDD/Adapters/Api-rest-endpoints.md`
-- `backendbackendSDD/Adapters/Rest-validation.md`
-- `backendbackendSDD/Adapters/Global-exception-handler.md`
-- `backendbackendSDD/Domain/Input-ports.md`
-- `backendbackendSDD/Domain/Output-ports.md`
+- `backendSDD/Contract-alignment.md`
+- `backendSDD/Adapters/Api-rest-endpoints.md`
+- `backendSDD/Adapters/Rest-validation.md`
+- `backendSDD/Adapters/Global-exception-handler.md`
+- `backendSDD/Domain/Input-ports.md`
+- `backendSDD/Domain/Output-ports.md`
 - `frontendSDD/Frontend-Architecture.md`
 - `frontendSDD/Frontend-Domain-Services.md`
 - `frontendSDD/Frontend-Adapters.md`
 - `frontendSDD/Frontend-Role-Modules.md`
-- `backendbackendSDD/Backend-Cors-Security.md`
+- `frontendSDD/Frontend-Design-System.md`
+- `frontendSDD/Frontend-User-Flows.md`
+- `backendSDD/Backend-Cors-Security.md`
 
 If an endpoint or response differs between the backend and this SDD, the discrepancy must be recorded and resolved before frontend implementation.
 
@@ -47,7 +49,22 @@ If an endpoint or response differs between the backend and this SDD, the discrep
 - No JWT secrets in browser storage. Store only the issued access token and safe user session data.
 - Clear logout behavior on token expiration or `401` responses.
 - All backend errors must be converted to the standard error shape and displayed through SweetAlert2 or an equivalent centralized alert adapter.
+- Each role must have a complete user journey from login to dashboard, consultation, mutation, success feedback, failure recovery and logout.
+- The implementation must preserve entered form values after recoverable `400`, `409` and `503` errors.
 
 ## 5. Acceptance criteria
 
 The frontend design is complete when every endpoint in the backend matrix has a frontend service mapping, every role has a module mapping, JWT propagation is defined, CORS is accepted by the backend contract, and the architecture can be implemented without inventing endpoint behavior.
+
+## 6. Experience acceptance matrix
+
+| Experience | Required states | Required verification |
+|---|---|---|
+| Login | idle, validating, loading, success, invalid credentials, dependency error | route transition and session creation |
+| Dashboard | skeleton, loaded cards, empty products, retry | role-specific summary visible |
+| Form mutation | local validation, pending, confirmation, success, conflict, retry | duplicate submit prevented |
+| Protected navigation | allowed, expired session, wrong role | `401` redirect and `403` alert |
+| Collections | loading, populated, empty, failed | retry preserves route/filter |
+| Financial action | review, confirm, processing, success, failure | amount and destination shown before send |
+
+The frontend agent must implement and test every row for each applicable role.

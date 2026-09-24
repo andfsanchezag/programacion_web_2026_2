@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-This document defines the single error-handling contract for the REST delivery layer. It applies to every endpoint and middleware error, regardless of whether the detected stack is TypeScript/Express or Java/Spring Boot. Cross-stack precedence, aliases and the status policy are defined in `backendbackendSDD/Contract-alignment.md`.
+This document defines the single error-handling contract for the REST delivery layer. It applies to every endpoint and middleware error, regardless of whether the detected stack is TypeScript/Express or Java/Spring Boot. Cross-stack precedence, aliases and the status policy are defined in `backendSDD/Contract-alignment.md`.
 
 The domain remains technology independent. Domain exceptions are declared in `domain/exceptions/`; the REST/infrastructure layer translates them into HTTP responses.
 
@@ -110,7 +110,7 @@ Requirements:
 
 ## 7. Endpoint Contract Integration
 
-`backendbackendSDD/Adapters/Api-rest-endpoints.md` is the source of truth for endpoint methods, paths, request/response DTOs and expected HTTP statuses. Each endpoint must document, or be traceable to, its possible error codes.
+`backendSDD/Adapters/Api-rest-endpoints.md` is the source of truth for endpoint methods, paths, request/response DTOs and expected HTTP statuses. Each endpoint must document, or be traceable to, its possible error codes.
 
 The implementation must verify that:
 

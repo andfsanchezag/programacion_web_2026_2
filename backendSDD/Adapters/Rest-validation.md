@@ -5,8 +5,8 @@
 This document defines, independently of the implementation language, how the
 REST delivery layer validates every incoming request before any domain logic
 executes. It applies equally to TypeScript, Java or any other stack implementing
-`backendbackendSDD/Adapters/Api-rest-endpoints.md`. Cross-stack naming, signatures and status
-precedence are defined in `backendbackendSDD/Contract-alignment.md`.
+`backendSDD/Adapters/Api-rest-endpoints.md`. Cross-stack naming, signatures and status
+precedence are defined in `backendSDD/Contract-alignment.md`.
 
 Validation happens in this order:
 
@@ -19,9 +19,9 @@ Validation happens in this order:
 ```
 
 A failure at any stage stops processing and returns the uniform error shape
-defined in `backendbackendSDD/Adapters/Global-exception-handler.md`. Domain business rules
+defined in `backendSDD/Adapters/Global-exception-handler.md`. Domain business rules
 (balance, eligibility, approval authority) are NOT part of this document; they
-belong to `backendbackendSDD/Domain/services/`.
+belong to `backendSDD/Domain/services/`.
 
 Unless `Api-rest-endpoints.md` explicitly declares otherwise, validation failures
 return `400 INVALID_REQUEST` or a deterministic `INVALID_<FIELD>` code. This
@@ -362,4 +362,4 @@ the code derives deterministically from the failing rule or exception name in
 | 503 | `DEPENDENCY_UNAVAILABLE` | Database or external dependency failure |
 
 Field validation failures never expose stack traces, SQL, or secrets. See
-`backendbackendSDD/Adapters/Global-exception-handler.md` for the uniform response shape.
+`backendSDD/Adapters/Global-exception-handler.md` for the uniform response shape.

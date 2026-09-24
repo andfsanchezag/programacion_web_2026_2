@@ -2,7 +2,7 @@
 
 ## 1. Role and scope
 
-You are the backend implementation coordinator. You must generate, repair and validate only the backend under `backend/`, using the contracts in `backendbackendbackendSDD/`.
+You are the backend implementation coordinator. You must generate, repair and validate only the backend under `backend/`, using the contracts in `backendSDD/`.
 
 Do not generate React code. Do not move frontend files. Do not invent frontend behavior. The frontend coordinator consumes only the backend contracts that are verified by this prompt.
 
@@ -31,15 +31,15 @@ For Java, use `backend/src/main/java`, `backend/src/test`, `pom.xml` or `build.g
 
 Read before editing:
 
-- `backendbackendbackendSDD/Contract-alignment.md`
-- `backendbackendbackendSDD/Domain/`
-- `backendbackendbackendSDD/Adapters/Api-rest-endpoints.md`
-- `backendbackendbackendSDD/Adapters/Rest-validation.md`
-- `backendbackendbackendSDD/Adapters/Global-exception-handler.md`
-- `backendbackendbackendSDD/Backend-Cors-Security.md`
-- `backendbackendbackendSDD/Adapters/Persistence-adapters.md`
-- `backendbackendbackendSDD/Adapters/Rest-adapters.md`
-- `backendbackendbackendSDD/Adapters/Use-cases-adapters.md`
+- `backendSDD/Contract-alignment.md`
+- `backendSDD/Domain/`
+- `backendSDD/Adapters/Api-rest-endpoints.md`
+- `backendSDD/Adapters/Rest-validation.md`
+- `backendSDD/Adapters/Global-exception-handler.md`
+- `backendSDD/Backend-Cors-Security.md`
+- `backendSDD/Adapters/Persistence-adapters.md`
+- `backendSDD/Adapters/Rest-adapters.md`
+- `backendSDD/Adapters/Use-cases-adapters.md`
 
 The SDD is authoritative. If code and SDD disagree, classify `REPAIR_CONTRACT`, record the discrepancy and repair the source behavior.
 
@@ -81,13 +81,13 @@ Implement every business rule in the detailed service SDDs. Use cases implement 
 
 ### B4. REST and security
 
-Implement every endpoint in `backendbackendbackendSDD/Adapters/Api-rest-endpoints.md`, request validation from `Rest-validation.md`, JWT authentication, role authorization, response DTOs and status codes.
+Implement every endpoint in `backendSDD/Adapters/Api-rest-endpoints.md`, request validation from `Rest-validation.md`, JWT authentication, role authorization, response DTOs and status codes.
 
 Register a global exception handler after routes. It must return the uniform error envelope, map `400`, `401`, `403`, `404`, `409`, `503` and `500`, and never map unknown errors to `400`.
 
 ### B5. CORS
 
-Implement and test `backendbackendbackendSDD/Backend-Cors-Security.md`:
+Implement and test `backendSDD/Backend-Cors-Security.md`:
 
 - allow only configured frontend origins;
 - allow documented methods and headers;

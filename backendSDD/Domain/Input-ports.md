@@ -1,7 +1,7 @@
 # Input Ports (Role-Based Use Case Interfaces)
 
 The language-independent signatures and Java/TypeScript adaptation rules are
-defined in `backendbackendSDD/Contract-alignment.md`. The Java snippets below are semantic
+defined in `backendSDD/Contract-alignment.md`. The Java snippets below are semantic
 contracts: TypeScript uses the same parameters and `Promise<T>` for I/O-bound
 operations. It must not silently add or remove business parameters.
 

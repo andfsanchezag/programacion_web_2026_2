@@ -1088,7 +1088,7 @@ JwtServicePort
 ## Canonical port naming
 
 The following names used historically in this document are aliases of the
-canonical ports defined in `backendbackendSDD/Domain/Output-ports.md`:
+canonical ports defined in `backendSDD/Domain/Output-ports.md`:
 
 | Name used in this document | Canonical Output Port |
 |---|---|
@@ -1146,7 +1146,7 @@ public interface UserRepositoryPort {
 }
 ```
 
-defined in `backendbackendSDD/Domain/Output-ports.md`. The persistence implementation may use the username to query the database, but this remains an implementation detail.
+defined in `backendSDD/Domain/Output-ports.md`. The persistence implementation may use the username to query the database, but this remains an implementation detail.
 
 ---
 

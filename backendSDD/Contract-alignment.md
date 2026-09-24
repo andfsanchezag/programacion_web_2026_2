@@ -8,14 +8,14 @@ The business contract is language-independent. Java and TypeScript are implement
 
 When documents disagree, apply this precedence:
 
-1. `backendbackendSDD/Contract-alignment.md` for cross-cutting naming, adaptation and status rules.
-2. `backendbackendSDD/Domain/Domain Model.md`, `backendbackendSDD/Domain/Domain Services.md` and the detailed service SDDs for business behavior.
-3. `backendbackendSDD/Domain/Input-ports.md` and `backendbackendSDD/Domain/Output-ports.md` for port responsibilities and semantic operations.
-4. `backendbackendSDD/Adapters/Api-rest-endpoints.md` for endpoint methods, paths, DTOs and success statuses.
-5. `backendbackendSDD/Adapters/Rest-validation.md` for request validation.
-6. `backendbackendSDD/Adapters/Global-exception-handler.md` for error responses and error classification.
-7. `backendbackendSDD/Adapters/Persistence-adapters.md`, `Rest-adapters.md` and `Use-cases-adapters.md` for technology-specific adapter structure.
-8. `backendbackendSDD/Orchestrator-prompt.md` for execution order, diagnostics and gates.
+1. `backendSDD/Contract-alignment.md` for cross-cutting naming, adaptation and status rules.
+2. `backendSDD/Domain/Domain Model.md`, `backendSDD/Domain/Domain Services.md` and the detailed service SDDs for business behavior.
+3. `backendSDD/Domain/Input-ports.md` and `backendSDD/Domain/Output-ports.md` for port responsibilities and semantic operations.
+4. `backendSDD/Adapters/Api-rest-endpoints.md` for endpoint methods, paths, DTOs and success statuses.
+5. `backendSDD/Adapters/Rest-validation.md` for request validation.
+6. `backendSDD/Adapters/Global-exception-handler.md` for error responses and error classification.
+7. `backendSDD/Adapters/Persistence-adapters.md`, `Rest-adapters.md` and `Use-cases-adapters.md` for technology-specific adapter structure.
+8. `backendSDD/Orchestrator-prompt.md` for execution order, diagnostics and gates.
 
 A lower-precedence document must be corrected when it conflicts with a higher-precedence document. A code implementation never overrides an SDD contract silently.
 
