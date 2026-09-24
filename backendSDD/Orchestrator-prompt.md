@@ -25,7 +25,7 @@ El agente debe entregar esta estructura final, independientemente de si el backe
 │   ├── Dockerfile
 │   └── README.md
 ├── backendSDD/                    # todos los SDD del backend
-├── frontendbackendSDD/                   # todos los SDD del frontend
+├── frontendSDD/                   # todos los SDD del frontend
 ├── docker-compose.yml             # backend, frontend, MySQL y MongoDB
 └── README.md
 ```
@@ -126,7 +126,7 @@ Antes de ejecutar cualquier fase de implementación, produce internamente una ta
 | Containerización | Dockerfile, .dockerignore, Compose, healthchecks, red y volúmenes | ... | ... | build/up/smoke/down |
 | Pruebas | unitarias, integración, E2E | ... | ... | comandos reales |
 
-Documentos contractuales obligatorios: todos los Markdown de `backendSDD/` y `frontendbackendSDD/`. Como mínimo deben existir `backendSDD/Contract-alignment.md`, `backendSDD/Backend-Cors-Security.md`, los contratos de dominio y adapters del backend, y `frontendbackendSDD/Frontend-SDD.md`, `frontendbackendSDD/Frontend-Architecture.md`, `frontendbackendSDD/Frontend-Domain-Services.md`, `frontendbackendSDD/Frontend-Adapters.md` y `frontendbackendSDD/Frontend-Role-Modules.md`.
+Documentos contractuales obligatorios: todos los Markdown de `backendSDD/` y `frontendSDD/`. Como mínimo deben existir `backendSDD/Contract-alignment.md`, `backendSDD/Backend-Cors-Security.md`, los contratos de dominio y adapters del backend, y `frontendSDD/Frontend-SDD.md`, `frontendSDD/Frontend-Architecture.md`, `frontendSDD/Frontend-Domain-Services.md`, `frontendSDD/Frontend-Adapters.md` y `frontendSDD/Frontend-Role-Modules.md`.
 
 El diagnóstico debe evaluar **cada etapa y cada entregable**, no solo el área general. Para cada fase (`0A`, `0B`, `0C`, `0D`, `1`, `2A`, `2B`, `2C`, `3A`, `3B`, `4`, `5A`, `5B`, `F` y `6`) debe registrar como mínimo:
 
@@ -277,11 +277,11 @@ Esta fase es exclusivamente documental. No genera componentes React ni instala d
 
 Debe producir y alinear estos documentos:
 
-- `frontendbackendSDD/Frontend-SDD.md`: alcance, requisitos y criterios de aceptación.
-- `frontendbackendSDD/Frontend-Architecture.md`: arquitectura, capas, dependencias y estructura.
-- `frontendbackendSDD/Frontend-Domain-Services.md`: modelos, servicios de aplicación, dashboard y estados.
-- `frontendbackendSDD/Frontend-Adapters.md`: cliente HTTP, sesión JWT, alertas y mapeo endpoint-servicio.
-- `frontendbackendSDD/Frontend-Role-Modules.md`: módulos, rutas y componentes por rol.
+- `frontendSDD/Frontend-SDD.md`: alcance, requisitos y criterios de aceptación.
+- `frontendSDD/Frontend-Architecture.md`: arquitectura, capas, dependencias y estructura.
+- `frontendSDD/Frontend-Domain-Services.md`: modelos, servicios de aplicación, dashboard y estados.
+- `frontendSDD/Frontend-Adapters.md`: cliente HTTP, sesión JWT, alertas y mapeo endpoint-servicio.
+- `frontendSDD/Frontend-Role-Modules.md`: módulos, rutas y componentes por rol.
 - `backendSDD/Backend-Cors-Security.md`: origen permitido, headers, JWT, preflight y pruebas CORS.
 
 Gate de Fase 0D:
@@ -299,16 +299,16 @@ El orquestador no puede pasar a la implementación del frontend mientras este ga
 
 ### FASE F: Implementación completa del frontend React
 
-Esta fase genera código real después de aprobar la Fase 0D. El agente debe implementar el frontend dentro de `frontend/` usando React + TypeScript y los contratos de `frontendbackendSDD/`.
+Esta fase genera código real después de aprobar la Fase 0D. El agente debe implementar el frontend dentro de `frontend/` usando React + TypeScript y los contratos de `frontendSDD/`.
 
 **Entregables obligatorios:**
 
 1. Crear o completar `frontend/package.json`, lockfile, `tsconfig`, configuración de build y `README.md`.
-2. Implementar la estructura definida en `frontendbackendSDD/Frontend-Architecture.md`: `domain`, `application`, `adapters`, `modules`, `components`, router, guards y providers.
+2. Implementar la estructura definida en `frontendSDD/Frontend-Architecture.md`: `domain`, `application`, `adapters`, `modules`, `components`, router, guards y providers.
 3. Implementar un cliente HTTP único apuntando a `VITE_API_BASE_URL`, con `Authorization: Bearer <JWT>` en cada petición protegida, `X-Request-Id`, timeout y manejo uniforme de respuestas.
 4. Implementar sesión JWT: login, persistencia segura según el SDD, expiración, logout, limpieza ante `401` y guards por `SystemRole`.
-5. Implementar todos los servicios y mapeos de `frontendbackendSDD/Frontend-Adapters.md`; no crear llamadas HTTP directamente dentro de páginas o componentes.
-6. Implementar las rutas públicas y los módulos de `frontendbackendSDD/Frontend-Role-Modules.md` para `NATURAL_CUSTOMER`, `BUSINESS_CUSTOMER`, `BUSINESS_OPERATOR`, `BUSINESS_SUPERVISOR`, `TELLER_EMPLOYEE`, `COMMERCIAL_EMPLOYEE` e `INTERNAL_ANALYST`.
+5. Implementar todos los servicios y mapeos de `frontendSDD/Frontend-Adapters.md`; no crear llamadas HTTP directamente dentro de páginas o componentes.
+6. Implementar las rutas públicas y los módulos de `frontendSDD/Frontend-Role-Modules.md` para `NATURAL_CUSTOMER`, `BUSINESS_CUSTOMER`, `BUSINESS_OPERATOR`, `BUSINESS_SUPERVISOR`, `TELLER_EMPLOYEE`, `COMMERCIAL_EMPLOYEE` e `INTERNAL_ANALYST`.
 7. Implementar dashboard inicial por rol. Clientes y usuarios asociados a empresas deben ver resumen de productos, cuentas, saldos, préstamos, transferencias u operaciones según autorización.
 8. Implementar estados `loading`, `empty`, `success`, `error` y `retry`, con skeletons o animaciones estables durante consultas.
 9. Integrar SweetAlert2 mediante un adapter central para validaciones, errores, confirmaciones financieras y operaciones exitosas.

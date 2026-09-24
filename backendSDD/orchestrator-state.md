@@ -53,15 +53,15 @@
 - archivos:
   - `backend/scripts/seed-data.ts` (nuevo, `npm run seed`: empleados vía
     adapters + 60 pasos HTTP con asserts de código y cuerpo, fail-fast)
-  - `backend/application/adapters/useCases/BusinessCustomerUseCaseImpl.ts`
+  - `backend/src/application/adapters/useCases/BusinessCustomerUseCaseImpl.ts`
     (§5.2: `registerCompanyUser` → `registerCustomerUser` con validación de empresa;
     antes exigía analista y el endpoint siempre daba 403)
-  - `backend/application/domain/valueobjects/SystemRole.ts`
+  - `backend/src/application/domain/valueobjects/SystemRole.ts`
     (§5.3/§5.4: `canApproveBusinessTransfers` incluye BUSINESS_CUSTOMER)
-  - `backend/application/domain/services/AuthorizationService.ts`
+  - `backend/src/application/domain/services/AuthorizationService.ts`
     (§7.2: `canExecute` en Transfer incluye SUPERVISOR/ANALYST; §9.1: rama Loan
     incluye COMMERCIAL_EMPLOYEE)
-  - `backend/application/server.ts` (§10.1 register employee → 201)
+  - `backend/src/application/server.ts` (§10.1 register employee → 201)
   - tests: +1 usecase 5.2, +1 business-approve, +1 supervisor/analyst-operate,
     +1 commercial-loan (fallaron antes, pasan después)
   - `tsconfig.json` (incluye `scripts/`), `package.json` (script `seed`), `README.md`
@@ -143,16 +143,16 @@ Siguiente acción exacta: ninguna de implementación; operar con `docker compose
   balance + auditoría) — estado: `IN_PROGRESS` (criterios §5.6/§5.11 pasan a VERIFIED;
   queda E2E formal y endurecer consistencia transaccional)
 - archivos:
-  - `backend/application/adapters/rest/middleware/errorHandler.ts` (nuevo:
+  - `backend/src/application/adapters/rest/middleware/errorHandler.ts` (nuevo:
     `requestIdMiddleware`, `classifyError` determinístico 400/401/403/404/409/503/500,
     `toErrorCode`, `globalErrorHandler` con forma uniforme, respeto a `headersSent`,
     log server-side de 5xx; desconocidos → 500, nunca 400)
-  - `backend/application/server.ts` (requestId + handler global registrado
+  - `backend/src/application/server.ts` (requestId + handler global registrado
     tras rutas; `run()` propaga a `next` y honra envelopes `{status,body}` de
     controladores — antes todo era 200; logout → 204; DELETE loan → resolve+closeLoan;
     ruta natural transfers → create&execute; audit-logs con filtros userId/
     operationType/cuenta + paginación page/size)
-  - `backend/application/domain/services/TransferService.ts` (creación bajo
+  - `backend/src/application/domain/services/TransferService.ts` (creación bajo
     umbral asigna APPROVED vía PENDING→WAITING→APPROVED con approvalDate/approvedBy
     §6.6/§9.6; validación de saldo suficiente en origen §6.4/§6.5)
   - `backend/test/adapters/errorHandler.test.ts` (nuevo, 23 pruebas:
@@ -276,8 +276,8 @@ Siguiente acción exacta: ninguna de implementación; operar con `docker compose
   - `backend/test/domain/services/TransferService.test.ts` (modificado:
     `buildTransferModel` acepta `creationDate`; test de expiración usa fechas
     relativas a `Date.now()`)
-  - `backend/application/domain/services/TransferService.ts` (leído, sin cambios)
-  - `backend/application/domain/models/Transfer.ts` (leído, sin cambios)
+  - `backend/src/application/domain/services/TransferService.ts` (leído, sin cambios)
+  - `backend/src/application/domain/models/Transfer.ts` (leído, sin cambios)
 - evidencia:
   - antes: `npm test` → `Test Files 1 failed | 31 passed`, `Tests 1 failed | 173 passed (174)`
     (`test/domain/services/TransferService.test.ts:105` — `expireTransfer` resolvía en
