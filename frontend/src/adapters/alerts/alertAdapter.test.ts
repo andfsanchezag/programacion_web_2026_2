@@ -86,6 +86,29 @@ describe('alertAdapter', () => {
     expect(html).toContain('CTA-900800700');
   });
 
+  it('confirmación normal usa texto tinta (contraste AA 7.38) y danger texto blanco', async () => {
+    const alerts = createAlertAdapter();
+    fireMock.mockResolvedValue({ isConfirmed: false } as never);
+
+    await alerts.confirmFinancialAction({ title: 'T', details: [{ label: 'Monto', value: '1' }] });
+    const normal = fireMock.mock.calls[0]?.[0] as unknown as {
+      customClass?: { confirmButton?: string };
+      confirmButtonColor?: string;
+    };
+    expect(normal.customClass?.confirmButton).toContain('aurora-confirm');
+    expect(normal.customClass?.confirmButton).not.toContain('aurora-confirm-danger');
+    expect(normal.confirmButtonColor).toBe('#d9a900');
+
+    fireMock.mockClear();
+    await alerts.confirmFinancialAction({ title: 'T', details: [{ label: 'Cuenta', value: 'C' }], danger: true });
+    const danger = fireMock.mock.calls[0]?.[0] as unknown as {
+      customClass?: { confirmButton?: string };
+      confirmButtonColor?: string;
+    };
+    expect(danger.customClass?.confirmButton).toContain('aurora-confirm-danger');
+    expect(danger.confirmButtonColor).toBe('#b42318');
+  });
+
   it('showSuccess y showExpiredSession usan títulos estables', async () => {
     const alerts = createAlertAdapter();
     await alerts.showSuccess('ok');

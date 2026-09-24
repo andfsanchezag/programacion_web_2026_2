@@ -68,6 +68,10 @@ export function createAlertAdapter(): AlertPort {
         confirmButtonText: config.confirmLabel ?? 'Confirmar',
         cancelButtonText: config.cancelLabel ?? 'Cancelar',
         reverseButtons: true,
+        customClass: {
+          ...(base.customClass ?? {}),
+          confirmButton: config.danger ? 'aurora-confirm aurora-confirm-danger' : 'aurora-confirm',
+        },
         ...(config.danger ? { confirmButtonColor: '#b42318' } : {}),
       });
       return result.isConfirmed === true;

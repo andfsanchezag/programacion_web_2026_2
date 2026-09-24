@@ -1,0 +1,207 @@
+{
+  "generatedAt": "2026-09-24T22:48:47.736Z",
+  "suffix": "shotmug4ini0",
+  "viewports": [
+    "1440x900"
+  ],
+  "shots": [
+    {
+      "viewport": "360x800",
+      "files": [
+        "login.png",
+        "login-validation.png",
+        "login-error.png",
+        "login-transition.png",
+        "natural-loading.png",
+        "natural-loaded.png",
+        "natural-empty.png",
+        "natural-error.png",
+        "natural-confirm.png",
+        "natural-success.png",
+        "natural-logout.png",
+        "nat-loading.png",
+        "nat-loaded.png",
+        "biz-loading.png",
+        "biz-loaded.png",
+        "operator-loading.png",
+        "operator-loaded.png",
+        "supervisor-loading.png",
+        "supervisor-loaded.png",
+        "supervisor-empty.png",
+        "teller-loading.png",
+        "teller-loaded.png",
+        "commercial-loading.png",
+        "commercial-loaded.png",
+        "analyst-loading.png",
+        "analyst-loaded.png",
+        "analyst-error.png",
+        "natural-nav-open.png",
+        "login-reduced-motion.png"
+      ]
+    },
+    {
+      "viewport": "768x1024",
+      "files": [
+        "login.png",
+        "login-validation.png",
+        "login-error.png",
+        "login-transition.png",
+        "natural-loading.png",
+        "natural-loaded.png",
+        "natural-empty.png",
+        "natural-error.png",
+        "natural-confirm.png",
+        "natural-success.png",
+        "natural-logout.png",
+        "nat-loading.png",
+        "nat-loaded.png",
+        "biz-loading.png",
+        "biz-loaded.png",
+        "operator-loading.png",
+        "operator-loaded.png",
+        "supervisor-loading.png",
+        "supervisor-loaded.png",
+        "supervisor-empty.png",
+        "teller-loading.png",
+        "teller-loaded.png",
+        "commercial-loading.png",
+        "commercial-loaded.png",
+        "analyst-loading.png",
+        "analyst-loaded.png",
+        "analyst-error.png",
+        "login-reduced-motion.png"
+      ]
+    },
+    {
+      "viewport": "1440x900",
+      "files": [
+        "login.png",
+        "login-validation.png",
+        "login-error.png",
+        "login-transition.png",
+        "natural-loading.png",
+        "natural-loaded.png",
+        "natural-empty.png",
+        "natural-error.png",
+        "natural-confirm.png",
+        "natural-success.png",
+        "natural-logout.png",
+        "nat-loading.png",
+        "nat-loaded.png",
+        "biz-loading.png",
+        "biz-loaded.png",
+        "operator-loading.png",
+        "operator-loaded.png",
+        "supervisor-loading.png",
+        "supervisor-loaded.png",
+        "supervisor-empty.png",
+        "teller-loading.png",
+        "teller-loaded.png",
+        "commercial-loading.png",
+        "commercial-loaded.png",
+        "analyst-loading.png",
+        "analyst-loaded.png",
+        "analyst-error.png",
+        "login-reduced-motion.png"
+      ]
+    }
+  ],
+  "a11y": {
+    "loginPreservesUsername": true,
+    "escapeDismissesConfirm": true,
+    "unlabeled-1440": {
+      "badInputs": 0,
+      "badButtons": 0,
+      "thWithoutScope": 0
+    },
+    "tabOrder": [
+      {
+        "vp": 1440,
+        "afterUsernameTab": "password"
+      }
+    ],
+    "reducedMotionMatch": true,
+    "contrast": [
+      {
+        "name": "texto/superficie",
+        "ratio": 16.1,
+        "pass": true
+      },
+      {
+        "name": "texto-suave/superficie",
+        "ratio": 6.05,
+        "pass": true
+      },
+      {
+        "name": "botón primario",
+        "ratio": 10.15,
+        "pass": true
+      },
+      {
+        "name": "botón hover/confirmar",
+        "ratio": 2.18,
+        "pass": false
+      },
+      {
+        "name": "peligro/blanco",
+        "ratio": 6.57,
+        "pass": true
+      },
+      {
+        "name": "éxito/superficie",
+        "ratio": 5.26,
+        "pass": true
+      },
+      {
+        "name": "aviso/superficie",
+        "ratio": 4.66,
+        "pass": true
+      },
+      {
+        "name": "info/superficie",
+        "ratio": 7.03,
+        "pass": true
+      },
+      {
+        "name": "error/superficie",
+        "ratio": 6.57,
+        "pass": true
+      }
+    ],
+    "unlabeled-360": {
+      "badInputs": 0,
+      "badButtons": 0,
+      "thWithoutScope": 0
+    },
+    "mobileDrawer": {
+      "expanded": "true",
+      "navVisible": true
+    },
+    "unlabeled-768": {
+      "badInputs": 0,
+      "badButtons": 0,
+      "thWithoutScope": 0
+    }
+  },
+  "errors": [],
+  "repairBackend": [
+    {
+      "id": "RB-1",
+      "need": "GET /api/v1/commercial/customers?identification={id} -> CustomerResponseDTO 200 (o extender GET /api/v1/teller/customers al rol COMMERCIAL_EMPLOYEE)",
+      "reason": "Frontend-Role-Modules §7 exige búsqueda de clientes para comercial; hoy el lookup responde 403 y el flujo opera con identificación directa",
+      "status": "BLOCKED-subfeature"
+    },
+    {
+      "id": "RB-2",
+      "need": "GET /api/v1/internal-analyst/customers?identification={id} -> CustomerResponseDTO 200 (o extender teller-search al rol INTERNAL_ANALYST)",
+      "reason": "Role-Modules §8: gestión de estado de clientes sin lookup previo; hoy opera con identificación directa y confirmación sobre el 200 del PATCH",
+      "status": "BLOCKED-subfeature"
+    },
+    {
+      "id": "OBS-1",
+      "need": "Alinear Api-rest-endpoints.md §8.5 (documenta 201) con el comportamiento real 200 de POST /api/v1/teller/accounts (el seed backend espera 200)",
+      "reason": "Sólo documentación; el frontend acepta cualquier 2xx",
+      "status": "OBSERVATION"
+    }
+  ]
+}

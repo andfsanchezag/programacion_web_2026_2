@@ -19,7 +19,7 @@
   color: var(--color-ink);
 }
 
-.btn:hover:not(:disabled) { background: var(--color-brand-strong); color: #fff; }
+.btn:hover:not(:disabled) { background: var(--color-brand-strong); color: var(--color-ink); }
 .btn:active:not(:disabled) { transform: translateY(1px); }
 .btn:disabled { opacity: 0.55; cursor: not-allowed; }
 
@@ -261,6 +261,10 @@
 }
 
 /* ---------- SweetAlert tweaks ---------- */
+/* Contraste AA: confirmación normal usa tinta sobre amarillo fuerte (7.38:1);
+   la variante danger conserva texto blanco sobre rojo (6.57:1). */
+.aurora-swal .swal2-confirm.aurora-confirm { color: var(--color-ink); }
+.aurora-swal .swal2-confirm.aurora-confirm-danger { color: #fff; }
 .aurora-swal-support {
   margin-top: var(--space-3);
   font-size: 0.82rem;
