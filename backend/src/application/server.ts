@@ -18,7 +18,7 @@ import { Currency } from './domain/valueobjects/Currency';
 import { TransferStatus } from './domain/valueobjects/TransferStatus';
 import { LoanType } from './domain/valueobjects/LoanType';
 import { AuthRestMapper, BankAccountRestMapper, LoanRestMapper, TransferRestMapper, OperationRestMapper } from './adapters/rest/mappers/rest.mappers';
-import { requestIdMiddleware, globalErrorHandler } from './adapters/rest/middleware/errorHandler';
+import { requestIdMiddleware, corsMiddleware, globalErrorHandler } from './adapters/rest/middleware/errorHandler';
 import { reqString, reqNumber, reqEmail } from './adapters/rest/validation/requestValidation';
 import { OperationType } from './domain/valueobjects/OperationType';
 
@@ -63,8 +63,10 @@ async function main(): Promise<void> {
   });
 
   const server = express();
-  server.use(express.json());
+  // Orden contractual Backend-Cors-Security §5: request id → CORS → JSON parser → auth → rutas → error handler.
   server.use(requestIdMiddleware);
+  server.use(corsMiddleware);
+  server.use(express.json());
   server.use((req: Request, _res: Response, next: NextFunction) => {
     console.log(`${req.method} ${req.path}`);
     next();

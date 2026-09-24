@@ -93,7 +93,8 @@ project does not use `422` for the currently documented endpoints.
 | `username` | Yes | username format | 400 `INVALID_REQUEST` |
 | `password` | Yes | non-blank string | 400 `INVALID_REQUEST` |
 
-Wrong credentials → 401 `INVALID_CREDENTIALS`. Inactive user → 403 `FORBIDDEN`.
+Wrong credentials → 401 `INVALID_CREDENTIALS`. Unknown username counts as wrong
+credentials (same 401, no user-enumeration leak). Inactive user → 403 `FORBIDDEN`.
 
 ### 3.2. `POST /api/v1/auth/logout`
 
@@ -250,6 +251,10 @@ Token role must be `BUSINESS_SUPERVISOR`.
 
 Same preconditions as §5.3. Success → 200.
 
+### 7.3. `PATCH /transfers/{transferId}/reject` — no body.
+
+Same preconditions as §5.3. Success → 200.
+
 ## 8. Teller Employee (`/api/v1/teller`)
 
 Token role must be `TELLER_EMPLOYEE`.
@@ -275,6 +280,35 @@ Insufficient balance → 409. Success → 200 with updated balance.
 ### 8.3. `PATCH /accounts/{accountNumber}/block` — no body.
 
 Account must be active (already blocked/closed → 409). Success → 200.
+
+### 8.4. `GET /customers?identification=`
+
+| Query | Req | Rule |
+|---|---|---|
+| `identification` | Yes | identification format |
+
+Unknown customer → 404. Success → 200.
+
+### 8.5. `POST /accounts`
+
+| Field | Req | Rule |
+|---|---|---|
+| `ownerIdentification` | Yes | identification format, must reference an existing customer |
+| `accountNumber` | No | accountNumber format when present (generated otherwise) |
+| `accountType` | No | valid `AccountType` code (defaults to `SAVINGS`) |
+| `currency` | No | 3-letter ISO code (defaults to `COP`) |
+
+Unknown owner → 404. Duplicate account → 409. Success → 201.
+
+### 8.6. `GET /accounts/{accountNumber}` — unknown account → 404, else 200.
+
+### 8.7. `PATCH /accounts/{accountNumber}/unblock` — no body.
+
+Account must be blocked (else 409). Success → 200.
+
+### 8.8. `PATCH /accounts/{accountNumber}/close` — no body.
+
+Account must be in a closable state (unknown → 404, illegal transition → 409). Success → 200.
 
 ## 9. Commercial Employee (`/api/v1/commercial`)
 
@@ -339,6 +373,10 @@ Success → 200 with `{content, totalElements, totalPages}`.
 
 Loan must exist (else 404) and be in a closable state (else 409). Success → 204
 with empty body.
+
+### 10.7. `PATCH /loans/{loanId}/reject` — no body.
+
+Loan must be `UNDER_REVIEW` (else 409). Unknown loan → 404. Success → 200.
 
 ## 11. Validation Error Reference
 

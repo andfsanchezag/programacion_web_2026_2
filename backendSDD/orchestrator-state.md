@@ -1,5 +1,17 @@
 # Orchestrator State
 
+## Run record (run-10: normalización final de rutas SDD — 2026-09-24)
+- runId: run-2026-09-24-document-paths-10
+- fase: `REPAIR_CONTRACT` — normalización de rutas y estructura documental
+- cambios: se corrigieron referencias duplicadas o heredadas en `backendSDD/` y
+  `frontendSDD/`; los prompts usan `backend/` y `frontend/` como raíces de código;
+  el backend permanece en `backend/src` y sus pruebas en `backend/test`.
+- evidencia: `git diff --check` exit 0; rutas obligatorias presentes; coincidencias
+  prohibidas en Markdown = 0; `backend npm run build` exit 0; `backend npm test` exit 0;
+  `docker compose config --quiet` exit 0.
+- estado: `IN_PROGRESS` — frontend aún requiere implementación y pruebas reales.
+- siguienteAccion: ejecutar Fase F del prompt frontend para generar la aplicación React.
+
 ## Run record (run-09: alineación completa SDD cross-stack — 2026-09-23)
 - runId: run-2026-09-23-alignment-09
 - fase: `REPAIR_CONTRACT` — alineación documental Java/TypeScript

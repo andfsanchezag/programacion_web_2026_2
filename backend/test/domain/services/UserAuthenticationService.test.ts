@@ -65,7 +65,8 @@ describe('UserAuthenticationService', () => {
   it('rejects unknown or inactive users during login', async () => {
     const { service, users } = build();
     (users.findByUsername as ReturnType<typeof vi.fn>).mockReturnValue(null);
-    await expect(service.login(User.forUsernameLookup('ghost'))).rejects.toThrow(UserNotFoundException);
+    // Contrato Rest-validation §3.1: usuario desconocido → 401 INVALID_CREDENTIALS (sin enumeración).
+    await expect(service.login(User.forUsernameLookup('ghost'))).rejects.toThrow(InvalidCredentialsException);
 
     (users.findByUsername as ReturnType<typeof vi.fn>).mockReturnValue(
       new User('u-9','i-9','N','e@x.com','p','a', SystemRole.NATURAL_CUSTOMER,'blocked','h', UserStatus.BLOCKED)

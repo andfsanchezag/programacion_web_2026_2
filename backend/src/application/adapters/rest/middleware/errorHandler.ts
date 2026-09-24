@@ -26,10 +26,50 @@ interface ErrorMapping {
 }
 
 /** Asigna o reutiliza `X-Request-Id` para correlacionar logs y respuestas. */
-export function requestIdMiddleware(req: Request, _res: Response, next: NextFunction): void {
+export function requestIdMiddleware(req: Request, res: Response, next: NextFunction): void {
   const incoming = req.headers['x-request-id'];
   const id = Array.isArray(incoming) ? incoming[0] : incoming;
-  (req as RequestWithId).requestId = id && id.length > 0 ? id : `req-${randomUUID()}`;
+  const requestId = id && id.length > 0 ? id : `req-${randomUUID()}`;
+  (req as RequestWithId).requestId = requestId;
+  res.setHeader('X-Request-Id', requestId);
+  next();
+}
+
+/**
+ * CORS (SDD `Backend-Cors-Security.md` §3/§5).
+ * Sin dependencia externa: allow-list desde `FRONTEND_ORIGIN`
+ * (coma-separada, default `http://localhost:5173`), sin wildcard.
+ * Debe registrarse después de `requestIdMiddleware` y antes del JSON parser
+ * y de las rutas para que el preflight no exija JWT.
+ */
+const ALLOWED_METHODS = 'GET, POST, PUT, PATCH, DELETE, OPTIONS';
+const ALLOWED_HEADERS = 'Authorization, Content-Type, Accept, X-Request-Id';
+const EXPOSED_HEADERS = 'X-Request-Id';
+
+export function getAllowedOrigins(): string[] {
+  const raw = process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173';
+  return raw.split(',').map((o) => o.trim()).filter((o) => o.length > 0);
+}
+
+export function corsMiddleware(req: Request, res: Response, next: NextFunction): void {
+  const origin = req.headers.origin;
+  if (typeof origin !== 'string' || origin.length === 0) {
+    next();
+    return;
+  }
+  if (!getAllowedOrigins().includes(origin)) {
+    next();
+    return;
+  }
+  res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Vary', 'Origin');
+  res.setHeader('Access-Control-Expose-Headers', EXPOSED_HEADERS);
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Methods', ALLOWED_METHODS);
+    res.setHeader('Access-Control-Allow-Headers', ALLOWED_HEADERS);
+    res.status(204).send();
+    return;
+  }
   next();
 }
 
@@ -153,5 +193,6 @@ export function globalErrorHandler(err: unknown, req: Request, res: Response, ne
     requestId,
     details,
   };
+  res.setHeader('X-Request-Id', requestId);
   res.status(status).json(body);
 }

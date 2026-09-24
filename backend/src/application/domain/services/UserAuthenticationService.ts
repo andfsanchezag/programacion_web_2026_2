@@ -53,7 +53,17 @@ export class UserAuthenticationService {
   }
 
   async login(user: User): Promise<AuthenticationResult> {
-    const stored = await this.findByUsername(user.username);
+    // Contrato Rest-validation §3.1: usuario desconocido y contraseña errónea
+    // responden igual (401 INVALID_CREDENTIALS) para no enumerar usuarios.
+    let stored: User;
+    try {
+      stored = await this.findByUsername(user.username);
+    } catch (e) {
+      if (e instanceof UserNotFoundException) {
+        throw new InvalidCredentialsException('Invalid username or password');
+      }
+      throw e;
+    }
     if (!stored.canAuthenticate()) {
       throw new UserNotActiveException('User is not active');
     }

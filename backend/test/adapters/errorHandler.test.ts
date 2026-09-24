@@ -5,6 +5,8 @@ import {
   classifyError,
   toErrorCode,
   requestIdMiddleware,
+  corsMiddleware,
+  getAllowedOrigins,
   globalErrorHandler,
   ErrorResponse,
 } from '../../src/application/adapters/rest/middleware/errorHandler';
@@ -95,6 +97,8 @@ describe('Global Exception Handler: requestId y respuesta', () => {
       headersSent: false,
       statusCode: 0,
       body: null as unknown,
+      headers: {} as Record<string, string>,
+      setHeader(name: string, value: string) { this.headers[name] = value; return this; },
       status(code: number) { this.statusCode = code; return this; },
       json(payload: unknown) { this.body = payload; return this; },
     };
@@ -103,11 +107,13 @@ describe('Global Exception Handler: requestId y respuesta', () => {
   it('genera requestId cuando falta y reutiliza X-Request-Id', () => {
     const next = vi.fn();
     const req1 = { headers: {} } as unknown as Request;
-    requestIdMiddleware(req1, {} as Response, next);
+    requestIdMiddleware(req1, mockRes() as unknown as Response, next);
     expect((req1 as unknown as { requestId: string }).requestId).toMatch(/^req-/);
     const req2 = { headers: { 'x-request-id': 'req-fixed-1' } } as unknown as Request;
-    requestIdMiddleware(req2, {} as Response, next);
+    const res2 = mockRes();
+    requestIdMiddleware(req2, res2 as unknown as Response, next);
     expect((req2 as unknown as { requestId: string }).requestId).toBe('req-fixed-1');
+    expect(res2.headers['X-Request-Id']).toBe('req-fixed-1');
     expect(next).toHaveBeenCalledTimes(2);
   });
 
@@ -116,6 +122,7 @@ describe('Global Exception Handler: requestId y respuesta', () => {
     const req = { path: '/api/v1/x', method: 'GET', headers: {}, requestId: 'req-abc' } as unknown as Request;
     globalErrorHandler(new CustomerNotFoundException('Customer not found'), req, res as unknown as Response, vi.fn());
     expect(res.statusCode).toBe(404);
+    expect(res.headers['X-Request-Id']).toBe('req-abc');
     const body = res.body as ErrorResponse;
     expect(Object.keys(body).sort()).toEqual(['code', 'details', 'message', 'path', 'requestId', 'status', 'timestamp'].sort());
     expect(body).toMatchObject({ status: 404, code: 'CUSTOMER_NOT_FOUND', path: '/api/v1/x', requestId: 'req-abc', details: null });
@@ -143,6 +150,75 @@ describe('Global Exception Handler: requestId y respuesta', () => {
     globalErrorHandler(err, req, res as unknown as Response, next);
     expect(next).toHaveBeenCalledWith(err);
     expect(res.body).toBeNull();
+  });
+});
+
+describe('CORS: Backend-Cors-Security §3/§5', () => {
+  function corsRes() {
+    return {
+      statusCode: 200,
+      headers: {} as Record<string, string>,
+      sent: false,
+      setHeader(name: string, value: string) { this.headers[name] = value; return this; },
+      status(code: number) { this.statusCode = code; return this; },
+      send() { this.sent = true; return this; },
+    };
+  }
+
+  it('expone allow-origin solo al origen permitido (default localhost:5173)', () => {
+    const next = vi.fn();
+    const res = corsRes();
+    corsMiddleware(
+      { method: 'GET', headers: { origin: 'http://localhost:5173' } } as unknown as Request,
+      res as unknown as Response, next,
+    );
+    expect(res.headers['Access-Control-Allow-Origin']).toBe('http://localhost:5173');
+    expect(res.headers['Access-Control-Expose-Headers']).toBe('X-Request-Id');
+    expect(next).toHaveBeenCalledTimes(1);
+  });
+
+  it('preflight OPTIONS del origen permitido -> 204 sin JWT', () => {
+    const next = vi.fn();
+    const res = corsRes();
+    corsMiddleware(
+      { method: 'OPTIONS', headers: { origin: 'http://localhost:5173' } } as unknown as Request,
+      res as unknown as Response, next,
+    );
+    expect(res.statusCode).toBe(204);
+    expect(res.sent).toBe(true);
+    expect(res.headers['Access-Control-Allow-Methods']).toContain('PATCH');
+    expect(res.headers['Access-Control-Allow-Headers']).toContain('Authorization');
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('origen no permitido no recibe cabeceras permisivas', () => {
+    const next = vi.fn();
+    const res = corsRes();
+    corsMiddleware(
+      { method: 'GET', headers: { origin: 'http://evil.example' } } as unknown as Request,
+      res as unknown as Response, next,
+    );
+    expect(res.headers['Access-Control-Allow-Origin']).toBeUndefined();
+    expect(next).toHaveBeenCalledTimes(1);
+  });
+
+  it('peticiones sin Origin (no-browser) pasan sin cabeceras CORS', () => {
+    const next = vi.fn();
+    const res = corsRes();
+    corsMiddleware({ method: 'GET', headers: {} } as unknown as Request, res as unknown as Response, next);
+    expect(res.headers['Access-Control-Allow-Origin']).toBeUndefined();
+    expect(next).toHaveBeenCalledTimes(1);
+  });
+
+  it('respeta FRONTEND_ORIGIN configurable', () => {
+    const prev = process.env.FRONTEND_ORIGIN;
+    process.env.FRONTEND_ORIGIN = 'http://localhost:5173, http://localhost:3000';
+    try {
+      expect(getAllowedOrigins()).toEqual(['http://localhost:5173', 'http://localhost:3000']);
+    } finally {
+      if (prev === undefined) delete process.env.FRONTEND_ORIGIN;
+      else process.env.FRONTEND_ORIGIN = prev;
+    }
   });
 });
 

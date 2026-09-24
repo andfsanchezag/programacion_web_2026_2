@@ -22,6 +22,11 @@ For all protected endpoints (all endpoints except Public Access Login & Registra
 - `Content-Type`: `application/json` (Required for `POST`, `PUT`, `PATCH`)
 - `Accept`: `application/json` (Required)
 
+CORS and correlation follow `backendSDD/Backend-Cors-Security.md`: browser
+origins allowed via `FRONTEND_ORIGIN` (default `http://localhost:5173`),
+preflight `OPTIONS` returns `204` without JWT, and every response carries an
+`X-Request-Id` header (accepted or generated).
+
 ---
 
 ## 3. Public Access Endpoints (`PublicAccessPort`)
@@ -327,6 +332,13 @@ For all protected endpoints (all endpoints except Public Access Login & Registra
 }
 ```
 
+### 6.2. Consult Company Accounts
+- **HTTP Method:** `GET`
+- **Path:** `/api/v1/business-operator/accounts`
+- **Headers:** `Authorization: Bearer <jwt_token>`
+- **Response (`List<BankAccountResponseDTO>` - HTTP 200 OK)**
+- **Errors:** `401` (`AUTHENTICATION_REQUIRED`, `INVALID_CREDENTIALS`), `403` (`FORBIDDEN` wrong role)
+
 ---
 
 ## 7. Business Supervisor Endpoints (`BusinessSupervisorPort`)
@@ -342,6 +354,14 @@ For all protected endpoints (all endpoints except Public Access Login & Registra
 - **Path:** `/api/v1/business-supervisor/transfers/{transferId}/approve`
 - **Headers:** `Authorization: Bearer <jwt_token>`
 - **Response (`TransferResponseDTO` - HTTP 200 OK)**
+
+### 7.3. Reject Pending Transfer
+- **HTTP Method:** `PATCH`
+- **Path:** `/api/v1/business-supervisor/transfers/{transferId}/reject`
+- **Headers:** `Authorization: Bearer <jwt_token>`
+- **Request Body:** None
+- **Response (`TransferResponseDTO` - HTTP 200 OK)**
+- **Errors:** `404` (unknown transfer), `409` (not `WAITING_FOR_APPROVAL`)**
 
 ---
 
@@ -384,6 +404,53 @@ For all protected endpoints (all endpoints except Public Access Login & Registra
 }
 ```
 - **Response (`BankAccountResponseDTO` - HTTP 200 OK)**
+
+### 8.4. Consult Customer by Identification
+- **HTTP Method:** `GET`
+- **Path:** `/api/v1/teller/customers?identification={identification}`
+- **Headers:** `Authorization: Bearer <jwt_token>`
+- **Query Parameters:** `identification` (required, identification format)
+- **Response (`CustomerResponseDTO` - HTTP 200 OK)**
+- **Errors:** `400` (missing `identification`), `404` (`CUSTOMER_NOT_FOUND`)
+
+### 8.5. Open Bank Account
+- **HTTP Method:** `POST`
+- **Path:** `/api/v1/teller/accounts`
+- **Headers:** `Authorization: Bearer <jwt_token>`, `Content-Type: application/json`
+- **Request Body (`OpenAccountRequestDTO`):**
+```json
+{
+  "ownerIdentification": "1017123456",
+  "accountNumber": "CTA-100200300",
+  "accountType": "SAVINGS",
+  "currency": "COP"
+}
+```
+- **Response (`BankAccountResponseDTO` - HTTP 201 Created)**
+- **Errors:** `404` (unknown owner customer), `400` (invalid `accountType`/`currency`), `409` (duplicate account)
+
+### 8.6. Consult Bank Account
+- **HTTP Method:** `GET`
+- **Path:** `/api/v1/teller/accounts/{accountNumber}`
+- **Headers:** `Authorization: Bearer <jwt_token>`
+- **Response (`BankAccountResponseDTO` - HTTP 200 OK)**
+- **Errors:** `404` (unknown account)
+
+### 8.7. Unblock Bank Account
+- **HTTP Method:** `PATCH`
+- **Path:** `/api/v1/teller/accounts/{accountNumber}/unblock`
+- **Headers:** `Authorization: Bearer <jwt_token>`
+- **Request Body:** None
+- **Response (`BankAccountResponseDTO` - HTTP 200 OK)**
+- **Errors:** `404` (unknown account), `409` (not blocked / illegal transition)
+
+### 8.8. Close Bank Account
+- **HTTP Method:** `PATCH`
+- **Path:** `/api/v1/teller/accounts/{accountNumber}/close`
+- **Headers:** `Authorization: Bearer <jwt_token>`
+- **Request Body:** None
+- **Response (`BankAccountResponseDTO` - HTTP 200 OK)**
+- **Errors:** `404` (unknown account), `409` (non-zero balance / illegal transition)**
 
 ---
 
@@ -491,3 +558,11 @@ For all protected endpoints (all endpoints except Public Access Login & Registra
 - **Path:** `/api/v1/internal-analyst/loans/{loanId}`
 - **Headers:** `Authorization: Bearer <jwt_token>`
 - **Response (HTTP 204 No Content)**
+
+### 10.7. Reject Loan Request
+- **HTTP Method:** `PATCH`
+- **Path:** `/api/v1/internal-analyst/loans/{loanId}/reject`
+- **Headers:** `Authorization: Bearer <jwt_token>`
+- **Request Body:** None
+- **Response (`LoanResponseDTO` - HTTP 200 OK)**
+- **Errors:** `404` (unknown loan), `409` (not `UNDER_REVIEW` / illegal transition)
