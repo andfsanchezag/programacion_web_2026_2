@@ -1,0 +1,116 @@
+
+> frontend@0.0.0 lint
+> oxlint
+
+
+  ! react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+    ,-[src/application/session/SessionProvider.tsx:45:17]
+ 44 | 
+ 45 | export function useServices(): AppServices {
+    :                 ^^^^^^^^^^^
+ 46 |   const ctx = useContext(ServicesContext);
+    `----
+
+  ! react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+     ,-[src/application/session/SessionProvider.tsx:124:17]
+ 123 | 
+ 124 | export function useSession(): SessionContextValue {
+     :                 ^^^^^^^^^^
+ 125 |   const ctx = useContext(SessionContext);
+     `----
+
+  ! eslint(no-useless-escape): Unnecessary escape character '-'
+    ,-[src/modules/public/RegisterNaturalCustomerPage.tsx:20:20]
+ 19 |   const e: Errors = {};
+ 20 |   if (!/^[0-9][0-9.\-]{0,29}$/.test(v.identification.trim())) e.identification = 'Identificación inválida (1-30 caracteres).';
+    :                    ^^
+ 21 |   if (v.name.trim().length < 1 || v.name.trim().length > 120) e.name = 'Nombre requerido (máx. 120).';
+    `----
+  help: Replace `\-` with `-`.
+
+  ! react(refs): Cannot access refs during render
+    ,-[src/application/viewModels/useAsyncResource.ts:34:12]
+ 33 |   const loaderRef = useRef(loader);
+ 34 |   loaderRef.current = loader;
+    :   ^^^^|^^^^^^^^|^^^
+    :       |        `-- Cannot update ref value during render
+    :       `-- This value is a ref
+ 35 |   const isEmptyRef = useRef(options?.isEmpty ?? isEmptyResult);
+    `----
+  help: React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected
+  note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/refs
+
+  ! react(refs): Cannot access refs during render
+    ,-[src/application/viewModels/useAsyncResource.ts:36:13]
+ 35 |   const isEmptyRef = useRef(options?.isEmpty ?? isEmptyResult);
+ 36 |   isEmptyRef.current = options?.isEmpty ?? isEmptyResult;
+    :   ^^^^^|^^^^^^^^|^^^
+    :        |        `-- Cannot update ref value during render
+    :        `-- This value is a ref
+ 37 | 
+    `----
+  help: React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected
+  note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/refs
+
+  ! react(refs): Cannot access refs during render
+    ,-[src/application/viewModels/useAsyncResource.ts:85:8]
+ 84 |   const fnRef = useRef(fn);
+ 85 |   fnRef.current = fn;
+    :   ^^|^^^^^^|^^^
+    :     |      `-- Cannot update ref value during render
+    :     `-- This value is a ref
+ 86 | 
+    `----
+  help: React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected
+  note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/refs
+
+  ! react(set-state-in-effect): Calling setState synchronously within an effect can trigger cascading renders
+    ,-[src/application/viewModels/useAsyncResource.ts:40:7]
+ 37 | 
+ 38 |   useEffect(() => {
+    :   ^^^^|^^^^
+    :       `-- This is the containing effect
+ 39 |     if (!enabled) {
+ 40 |       setStatus('idle');
+    :       ^^^^|^^^^
+    :           `-- Avoid calling setState() directly within an effect
+ 41 |       return;
+    `----
+  help: Effects should synchronize React with external systems. Calling setState synchronously inside an effect starts another render and is usually unnecessary. Derive the value during render, initialize state directly, or update it from the event that caused the change. Use an effect only when synchronizing with an external system.
+  note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/set-state-in-effect
+
+  ! eslint(no-useless-catch): Unnecessary catch clause
+    ,-[src/application/viewModels/useAsyncResource.ts:91:14]
+ 90 |       return await fnRef.current(...args);
+ 91 |     } catch (e) {
+    :              |
+    :              `-- is caught here
+ 92 |       // El caller decide cómo presentar; sólo propagamos undefined explícito.
+ 93 |       throw e;
+    :       ^^^^|^^^
+    :           `-- and re-thrown here
+ 94 |     } finally {
+    `----
+  help: Remove the catch clause, since it does not provide any additional error handling or functionality beyond what the finalizer already provides.
+
+  ! eslint(no-useless-escape): Unnecessary escape character '-'
+    ,-[src/modules/public/RegisterBusinessCustomerPage.tsx:25:20]
+ 24 |   if (v.address.trim().length < 1 || v.address.trim().length > 200) e.address = 'Dirección requerida.';
+ 25 |   if (!/^[0-9][0-9.\-]{0,29}$/.test(v.legalRepresentativeIdentification.trim())) {
+    :                    ^^
+ 26 |     e.legalRepresentativeIdentification = 'Identificación del representante inválida.';
+    `----
+  help: Replace `\-` with `-`.
+
+  ! eslint(no-unused-vars): Catch parameter 'err' is caught but never used.
+    ,-[src/modules/internal-analyst/AnalystLoanSection.tsx:23:12]
+ 22 |     try { setLoan(await services.loans.getLoan(loanId.trim())); }
+ 23 |     catch (err) { setLoan(null); }
+    :            ^|^
+    :             `-- 'err' is declared here
+ 24 |     finally { setLoanPending(false); }
+    `----
+  help: Consider handling this error.
+
+Found 10 warnings and 0 errors.
+Finished in 119ms on 59 files with 116 rules using 12 threads.

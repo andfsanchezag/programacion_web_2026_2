@@ -1,0 +1,27 @@
+/* Design tokens — Frontend-Design-System.md §2 (valores ajustados, semántica idéntica). */
+:root {
+  --color-brand: #f2c94c;
+  --color-brand-strong: #d9a900;
+  --color-ink: #202124;
+  --color-ink-soft: #5f6368;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f5f6f7;
+  --color-border: #d9dde2;
+  --color-success: #237a57;
+  --color-warning: #a76500;
+  --color-danger: #b42318;
+  --color-info: #2457a6;
+  --font-body: 'Atkinson Hyperlegible', 'Trebuchet MS', sans-serif;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --shadow-card: 0 8px 24px rgba(32, 33, 36, 0.08);
+  --shadow-pop: 0 12px 32px rgba(32, 33, 36, 0.16);
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --nav-width: 248px;
+  --focus-ring: 0 0 0 3px rgba(242, 201, 76, 0.65);
+}
