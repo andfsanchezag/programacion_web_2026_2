@@ -75,6 +75,29 @@ services:
       retries: 5
       start_period: 40s
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: http://localhost:8080
+    image: aurora-frontend:local
+    container_name: aurora-frontend
+    restart: on-failure:5
+    depends_on:
+      bank-api:
+        condition: service_healthy
+    ports:
+      - "5173:80"
+    networks:
+      - bank-net
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
 networks:
   bank-net:
     driver: bridge
