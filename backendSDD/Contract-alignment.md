@@ -128,7 +128,7 @@ An endpoint is `VERIFIED` only when its method, path, validation, use case, resp
 ## 8. Docker and environment policy
 
 - MySQL container port is always `3306`; MongoDB container port is always `27017`.
-- Host ports are configurable: `MYSQL_HOST_PORT` defaults to `3306` and may be set to `3308` only when host port `3306` is occupied.
+- The repository default host port is `3306` for MySQL, and the Compose configuration must stay consistent with that choice unless a deliberate override is documented and propagated to all related files.
 - Inside Compose, the application uses service names such as `mysql-db` and `mongo-db`, never `localhost`.
 - Host execution uses `localhost` and the selected host port.
 - The selected host port must appear consistently in Compose, `.env.example`, README and the persistent orchestrator state.

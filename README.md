@@ -133,7 +133,8 @@ Browser interaction
 | Technology | Role in this project | Operational detail |
 |---|---|---|
 | Docker | Packages backend and frontend with reproducible runtime dependencies. | Backend and frontend commands run inside images; host Node/npm installation is not required. |
-| Docker Compose v2 | Describes the complete local topology. | Starts `frontend`, `bank-api`, `mysql-db` and `mongo-db` on the `bank-net` bridge network. |
+| Docker Compose v2 | Describes the complete local topology. | Starts `frontend`, `bank-api`, `mysql-db`, `mysql-viewer` and `mongo-db` on the `bank-net` bridge network. |
+| Adminer | Browser-based MySQL database viewer for local development. | Available at `http://localhost:8081`; connect to server `mysql-db`, port `3306`, database `bank_db`, user `root` and the development password from Compose. |
 | Docker health checks | Coordinates startup readiness. | API waits for healthy MySQL and MongoDB; frontend waits for the API health endpoint. |
 | MySQL named volume | Persists operational data across container restarts. | Compose volume: `mysql_data`. |
 | MongoDB named volume | Persists audit data across container restarts. | Compose volume: `mongo_data`. |

@@ -140,7 +140,7 @@ docker compose down -v
 
 ## 10. Common problems
 
-- Port `3306` occupied: keep MySQL host port `3308`; the application container always uses `mysql-db:3306`.
+- MySQL connection failure: verify the local host port is `3306` and the application still connects through `mysql-db:3306` inside the Compose network.
 - API unhealthy: inspect `docker compose logs bank-api`.
 - Database connection failure: verify MySQL/Mongo health with `docker compose ps`.
 - Test imports fail after moving files: rebuild the image and verify imports use `src/application` inside the container.

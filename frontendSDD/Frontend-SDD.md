@@ -19,6 +19,17 @@ The frontend must provide:
 - Responsive banking UI using a yellow, black, white and neutral palette inspired by Bancolombia without copying proprietary branding or assets.
 - Complete consumption of the documented backend endpoints.
 
+## 2.1. C4 frontend
+
+La vista C4 está dividida en un archivo por nivel:
+
+1. [Nivel 1 - Contexto](C4-1-Contexto.md): usuarios, sistema frontend y API externa.
+2. [Nivel 2 - Contenedores](C4-2-Contenedores.md): navegador, servidor de estáticos y API.
+3. [Nivel 3 - Componentes](C4-3-Componentes.md): módulos React, servicios, dominio y adaptadores.
+4. [Nivel 4 - Código y React](C4-4-Codigo-React.md): montaje, providers, hooks, estado, rutas, renderizado y flujos concretos de React en esta aplicación.
+
+El cuarto nivel documenta archivos y comportamiento de la implementación; no sustituye los contratos de dominio, endpoints o flujos definidos en el resto del SDD.
+
 ## 3. Source Contracts
 
 The implementation must use these documents as source contracts:
